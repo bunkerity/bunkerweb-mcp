@@ -1,0 +1,81 @@
+{
+  "name": "MCP Tool - Global Config",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://bw-mcp:8080/rpc",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"tool\": \"global_config_read\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {\n    \"full\": {{ $json.query?.full || $json.full || false }},\n    \"methods\": {{ $json.query?.methods || $json.methods || false }}\n  }\n}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "http-global-config",
+      "name": "HTTP Request - Global Config",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formater la configuration globale\nconst response = $input.item.json.result || $input.item.json;\nconst config = response.data || response.config || response;\n\nif (!config || typeof config !== 'object') {\n  return {\n    json: {\n      success: false,\n      message: \"❌ Impossible de récupérer la configuration globale.\",\n      config: null\n    }\n  };\n}\n\nlet formattedText = '**Configuration Globale BunkerWeb:**\\n\\n';\n\n// Grouper les variables par catégorie\nconst categories = {\n  'Sécurité': ['USE_MODSECURITY', 'USE_MODSECURITY_CRS', 'USE_ANTIBOT', 'USE_BAD_BEHAVIOR'],\n  'Limites': ['USE_LIMIT_REQ', 'LIMIT_REQ_RATE', 'LIMIT_REQ_BURST'],\n  'SSL/TLS': ['AUTO_LETS_ENCRYPT', 'USE_CUSTOM_SSL', 'HTTPS_PROTOCOLS'],\n  'Logs': ['LOG_LEVEL', 'MODSECURITY_SEC_AUDIT_LOG']\n};\n\nObject.entries(categories).forEach(([category, vars]) => {\n  const categoryVars = vars.filter(v => config[v] !== undefined && config[v] !== null && config[v] !== '');\n  if (categoryVars.length > 0) {\n    formattedText += `**${category}:**\\n`;\n    categoryVars.forEach(varName => {\n      formattedText += `• ${varName}: ${config[varName]}\\n`;\n    });\n    formattedText += '\\n';\n  }\n});\n\n// Compter les autres variables\nconst allCategoryVars = Object.values(categories).flat();\nconst otherVars = Object.keys(config).filter(k => \n  !allCategoryVars.includes(k) && config[k] !== null && config[k] !== ''\n);\n\nif (otherVars.length > 0) {\n  formattedText += `(+ ${otherVars.length} autre(s) variable(s) configurée(s))\\n`;\n}\n\nreturn {\n  json: {\n    success: true,\n    message: formattedText,\n    config: config,\n    total_vars: Object.keys(config).length\n  }\n};"
+      },
+      "id": "code-format-config",
+      "name": "Code - Format Config",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Global Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Global Config": {
+      "main": [
+        [
+          {
+            "node": "Code - Format Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-12-27T00:00:00.000Z",
+  "versionId": "1"
+}

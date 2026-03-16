@@ -1,0 +1,66 @@
+# HorizontalPodAutoscaler for MCP BunkerWeb
+# Automatically scales pods based on CPU and memory utilization
+#
+# Prerequisites:
+# - Metrics Server must be installed in the cluster
+#   kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+#
+# Usage:
+#   kubectl apply -f hpa.yaml
+#
+# Monitor autoscaling:
+#   kubectl get hpa -n bunkerweb
+#   kubectl describe hpa mcp-bunkerweb -n bunkerweb
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mcp-bunkerweb
+  namespace: bunkerweb
+  labels:
+    app: mcp-bunkerweb
+    app.kubernetes.io/name: mcp-bunkerweb
+    app.kubernetes.io/component: autoscaling
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mcp-bunkerweb
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    # Scale based on CPU utilization
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    # Scale based on Memory utilization
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+      selectPolicy: Min

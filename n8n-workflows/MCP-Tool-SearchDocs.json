@@ -1,0 +1,81 @@
+{
+  "name": "MCP Tool - Search Docs",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://bw-mcp:8080/rpc",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"tool\": \"search_bunkerweb_docs\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {\n    \"query\": \"{{ $json.query?.query || $json.q || $json.search_query || '' }}\",\n    \"limit\": {{ $json.query?.limit || $json.limit || 5 }},\n    \"min_score\": {{ $json.query?.min_score || $json.min_score || 0.3 }},\n    \"category\": \"{{ $json.query?.category || $json.category || '' }}\"\n  }\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "http-search-docs",
+      "name": "HTTP Request - Search Docs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formater les résultats de la recherche pour l'agent IA\nconst response = $input.item.json.result || $input.item.json;\nconst results = response.results || [];\n\nif (results.length === 0) {\n  return {\n    json: {\n      success: true,\n      message: \"Aucun résultat trouvé dans la documentation.\",\n      results: []\n    }\n  };\n}\n\nlet formattedText = `J'ai trouvé ${results.length} résultat(s) dans la documentation BunkerWeb`;\nif (response.query) {\n  formattedText += ` pour \"${response.query}\"`;\n}\nformattedText += ` :\\n\\n`;\n\nresults.forEach((doc, idx) => {\n  formattedText += `${idx + 1}. **${doc.title}**`;\n  if (doc.category) {\n    formattedText += ` (${doc.category})`;\n  }\n  formattedText += `\\n`;\n  \n  const score = doc.relevance_score || doc.score || 0;\n  formattedText += `   Score de pertinence: ${(score * 100).toFixed(0)}%\\n`;\n  formattedText += `   ${doc.content.substring(0, 300)}...\\n`;\n  formattedText += `   📖 Lien: ${doc.url}\\n\\n`;\n});\n\nreturn {\n  json: {\n    success: true,\n    message: formattedText,\n    raw_results: results,\n    count: results.length,\n    query: response.query || null\n  }\n};"
+      },
+      "id": "code-format-results",
+      "name": "Code - Format Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Search Docs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Search Docs": {
+      "main": [
+        [
+          {
+            "node": "Code - Format Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-12-27T00:00:00.000Z",
+  "versionId": "1"
+}

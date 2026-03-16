@@ -1,0 +1,33 @@
+# ServiceMonitor for Prometheus Operator
+# Enables automatic metrics scraping by Prometheus
+#
+# Prerequisites:
+# - Prometheus Operator must be installed in the cluster
+# - Prometheus must be configured to discover ServiceMonitors
+#
+# Usage:
+#   kubectl apply -f servicemonitor.yaml
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mcp-bunkerweb
+  namespace: bunkerweb
+  labels:
+    app: mcp-bunkerweb
+    app.kubernetes.io/name: mcp-bunkerweb
+    app.kubernetes.io/component: monitoring
+    release: prometheus  # Adjust to match your Prometheus release label
+spec:
+  selector:
+    matchLabels:
+      app: mcp-bunkerweb
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      scheme: http
+  namespaceSelector:
+    matchNames:
+      - bunkerweb

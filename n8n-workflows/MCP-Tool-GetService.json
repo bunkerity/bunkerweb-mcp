@@ -1,0 +1,81 @@
+{
+  "name": "MCP Tool - Get Service",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://bw-mcp:8080/rpc",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"tool\": \"get_service\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {\n    \"service\": \"{{ $json.query?.service || $json.service }}\",\n    \"full\": {{ $json.query?.full || $json.full || false }},\n    \"methods\": {{ $json.query?.methods !== undefined ? $json.query.methods : ($json.methods !== undefined ? $json.methods : true) }},\n    \"with_drafts\": {{ $json.query?.with_drafts !== undefined ? $json.query.with_drafts : ($json.with_drafts !== false) }}\n  }\n}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "http-get-service",
+      "name": "HTTP Request - Get Service",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formater les détails du service\nconst response = $input.item.json.result || $input.item.json;\nconst data = response.data || response;\n\nif (!data || typeof data !== 'object' || !data.SERVER_NAME) {\n  return {\n    json: {\n      success: false,\n      message: \"Service non trouvé.\",\n      service: null\n    }\n  };\n}\n\n// Extraire les valeurs\nconst serviceName = data.SERVER_NAME?.value || 'Unknown';\nconst isDraft = data.IS_DRAFT?.value === 'yes';\nconst method = data.SERVER_NAME?.method || 'N/A';\nconst status = isDraft ? '📝 Brouillon' : '✅ En ligne';\n\nlet formattedText = `Service **${serviceName}** - ${status}\\n\\n`;\nformattedText += `• Méthode: ${method}\\n`;\n\n// Variables importantes à afficher\nconst importantVars = [\n  'USE_MODSECURITY',\n  'USE_MODSECURITY_CRS',\n  'USE_ANTIBOT',\n  'USE_LIMIT_REQ',\n  'USE_BAD_BEHAVIOR',\n  'AUTO_LETS_ENCRYPT',\n  'REVERSE_PROXY_URL',\n  'USE_REVERSE_PROXY'\n];\n\n// Filtrer pour ne garder que les variables non-globales (spécifiques au service)\nconst serviceSpecificVars = {};\nObject.keys(data).forEach(key => {\n  if (data[key]?.global === false || importantVars.includes(key)) {\n    serviceSpecificVars[key] = data[key];\n  }\n});\n\nformattedText += '\\n**Configuration:**\\n';\nimportantVars.forEach(varName => {\n  if (serviceSpecificVars[varName]?.value) {\n    const val = serviceSpecificVars[varName].value;\n    const isGlobal = serviceSpecificVars[varName].global ? ' (global)' : '';\n    formattedText += `• ${varName}: ${val}${isGlobal}\\n`;\n  }\n});\n\nconst otherServiceVars = Object.keys(serviceSpecificVars).filter(k => \n  !importantVars.includes(k) && k !== 'SERVER_NAME' && k !== 'IS_DRAFT'\n).length;\n\nif (otherServiceVars > 0) {\n  formattedText += `\\n(+ ${otherServiceVars} autre(s) variable(s) spécifique(s))\\n`;\n}\n\nreturn {\n  json: {\n    success: true,\n    message: formattedText,\n    service: serviceSpecificVars  // Ne retourner que les vars spécifiques au service\n  }\n};"
+      },
+      "id": "code-format-service",
+      "name": "Code - Format Service",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Get Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Get Service": {
+      "main": [
+        [
+          {
+            "node": "Code - Format Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-12-27T00:00:00.000Z",
+  "versionId": "1"
+}

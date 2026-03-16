@@ -1,0 +1,81 @@
+{
+  "name": "MCP Tool - Unban IP",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://bw-mcp:8080/rpc",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"tool\": \"unban_ip\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {\n    \"bans\": {{ JSON.stringify($json.query?.bans || $json.bans) }}\n  }\n}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "http-unban-ip",
+      "name": "HTTP Request - Unban IP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formater la réponse de débannissement\nconst response = $input.item.json.result || $input.item.json;\nconst data = response.data || response;\n\nif (response.status !== 'success') {\n  return {\n    json: {\n      success: false,\n      message: `❌ Erreur lors du débannissement: ${response.msg || 'Erreur inconnue'}`,\n      error: response.msg\n    }\n  };\n}\n\nlet formattedText = `✅ Débannissement effectué avec succès.\\n`;\n\nif (data && typeof data === 'object') {\n  const instances = Object.keys(data);\n  formattedText += `\\n**Instances mises à jour:** ${instances.join(', ')}\\n`;\n  \n  instances.forEach(instance => {\n    if (data[instance].status === 'success') {\n      formattedText += `\\n• ${instance}: ✅ OK`;\n    } else {\n      formattedText += `\\n• ${instance}: ❌ ${data[instance].msg || 'Erreur'}`;\n    }\n  });\n}\n\nreturn {\n  json: {\n    success: true,\n    message: formattedText,\n    data: data\n  }\n};"
+      },
+      "id": "code-format-response",
+      "name": "Code - Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Unban IP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Unban IP": {
+      "main": [
+        [
+          {
+            "node": "Code - Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-12-27T00:00:00.000Z",
+  "versionId": "1"
+}

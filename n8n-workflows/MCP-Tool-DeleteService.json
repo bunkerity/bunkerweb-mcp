@@ -1,0 +1,81 @@
+{
+  "name": "MCP Tool - Delete Service",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://bw-mcp:8080/rpc",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"tool\": \"delete_service\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {\n    \"service\": \"{{ $json.query?.service || $json.service }}\"\n  }\n}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "http-delete-service",
+      "name": "HTTP Request - Delete Service",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formater la réponse de suppression\nconst response = $input.item.json.result || $input.item.json;\nconst data = response.data || response;\n\nif (response.status !== 'success') {\n  return {\n    json: {\n      success: false,\n      message: `❌ Erreur lors de la suppression du service: ${response.msg || 'Erreur inconnue'}`,\n      error: response.msg\n    }\n  };\n}\n\nconst serviceName = data.id || data.service || 'Service';\nlet formattedText = `✅ Service **${serviceName}** supprimé avec succès.\\n\\n`;\nformattedText += '⚠️ N\\'oubliez pas de recharger la configuration avec `reload_config` pour appliquer les changements.';\n\nreturn {\n  json: {\n    success: true,\n    message: formattedText,\n    service_name: serviceName\n  }\n};"
+      },
+      "id": "code-format-response",
+      "name": "Code - Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Delete Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Delete Service": {
+      "main": [
+        [
+          {
+            "node": "Code - Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-12-27T00:00:00.000Z",
+  "versionId": "1"
+}

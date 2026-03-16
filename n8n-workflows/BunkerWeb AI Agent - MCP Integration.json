@@ -1,0 +1,512 @@
+{
+  "name": "BunkerWeb AI Agent - MCP Integration",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "33cc2081-70ec-4584-b159-96e3b00a37d8",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        432,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Bonjour ! Je suis votre assistant BunkerWeb. Je peux :\n\n• Répondre à vos questions sur la configuration BunkerWeb\n• Lister et gérer vos services\n• Consulter les bans d'IP actifs\n• Créer/modifier des services\n• Bannir ou débannir des IPs\n• Rechercher dans la documentation\n\nQue puis-je faire pour vous ?",
+        "options": {
+          "title": "BunkerWeb Assistant"
+        }
+      },
+      "id": "813730ba-e34c-42bb-bc1f-b4e05b64a4fd",
+      "name": "Chat Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        -160
+      ],
+      "webhookId": "bunkerweb-chat"
+    },
+    {
+      "parameters": {
+        "name": "search_docs",
+        "description": "Recherche dans la documentation BunkerWeb pour répondre aux questions de l'utilisateur sur la configuration, les fonctionnalités, etc.",
+        "workflowId": "LLaXEvFfipB2pIR1",
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"query\": \"comment configurer ModSecurity\",\n  \"limit\": 5,\n  \"min_score\": 0.3\n}"
+      },
+      "id": "e17cd98d-036a-4bc8-b5bf-629de6fd2ed1",
+      "name": "Tool - Search Docs",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        912,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "name": "list_services",
+        "description": "Liste tous les services BunkerWeb configurés (avec ou sans les brouillons)",
+        "workflowId": "3xTv7yc5zflZKlPx",
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"with_drafts\": true\n}"
+      },
+      "id": "c2b97eec-c485-4fa1-8ed1-0419e2e601d0",
+      "name": "Tool - List Services",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        576,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "name": "get_service",
+        "description": "Obtient les détails complets d'un service BunkerWeb spécifique par son nom\nToujours demandé avec le parametre query.full=false",
+        "workflowId": "EgvLI37B6zSborMY",
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"service\": \"example.com\",\n  \"full\": false\n}"
+      },
+      "id": "c2a3ffeb-305f-4015-ad70-0f8b124b509b",
+      "name": "Tool - Get Service",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        576,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "name": "create_service",
+        "description": "Crée un nouveau service BunkerWeb avec le nom de domaine spécifié et des variables optionnelles",
+        "workflowId": "xy7EPUJQNYS52PXA",
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"server_name\": \"example.com\",\n  \"is_draft\": false,\n  \"variables\": {\n    \"USE_MODSECURITY\": \"yes\",\n    \"USE_ANTIBOT\": \"javascript\"\n  }\n}"
+      },
+      "id": "5e606b12-1368-4c53-a4b7-659d42bd0bb9",
+      "name": "Tool - Create Service",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "name": "list_bans",
+        "description": "Liste toutes les IPs actuellement bannies avec les détails (raison, expiration, etc.)",
+        "workflowId": "7ziEPXxWSklst7es"
+      },
+      "id": "f7517e6e-587a-40b1-9ab8-802ea7da1c77",
+      "name": "Tool - List Bans",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1376,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "name": "ban_ip",
+        "description": "Bannit une ou plusieurs adresses IP avec une durée et une raison spécifiées",
+        "workflowId": "mwSZrTj28PVZV6UI",
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"bans\": [\n    {\n      \"ip\": \"192.168.1.100\",\n      \"exp\": 3600,\n      \"reason\": \"Activité suspecte\",\n      \"service\": null\n    }\n  ]\n}"
+      },
+      "id": "c28bc935-24b5-41f0-9b9d-becbc4925e2f",
+      "name": "Tool - Ban IP",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1248,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "name": "unban_ip",
+        "description": "Débannit une ou plusieurs adresses IP",
+        "workflowId": "xeIXNUkSeIiO7pht",
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"bans\": [\n    {\n      \"ip\": \"192.168.1.100\",\n      \"service\": null\n    }\n  ]\n}"
+      },
+      "id": "bdfe6e6d-c339-4997-bb5c-cda3bde176b3",
+      "name": "Tool - Unban IP",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1504,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "name": "global_config",
+        "description": "Consulte la configuration globale de BunkerWeb",
+        "workflowId": "0vp2jokU4WHS0p0n",
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"full\": false,\n  \"methods\": false\n}"
+      },
+      "id": "78d86e35-06af-4903-b01f-1c3c520c8581",
+      "name": "Tool - Global Config",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "name": "list_instances",
+        "description": "Liste toutes les instances BunkerWeb enregistrées",
+        "workflowId": "ckWtUQJurBFMqZXT"
+      },
+      "id": "a48a48a2-bbad-4a4d-aeeb-709c627201fd",
+      "name": "Tool - List Instances",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1056,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "name": "reload_config",
+        "description": "Recharge la configuration sur toutes les instances BunkerWeb (avec test de validation optionnel)",
+        "workflowId": "4iS39AJlIkdiCGQ2",
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"test\": true\n}"
+      },
+      "id": "dad5b1b5-ee12-494a-aa77-3949f5432d43",
+      "name": "Tool - Reload Config",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        1232,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "mcp-url",
+              "name": "mcpUrl",
+              "value": "http://bw-mcp:8080",
+              "type": "string"
+            },
+            {
+              "id": "tool-name",
+              "name": "toolName",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "tool-args",
+              "name": "toolArgs",
+              "value": "={}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b3ff51e1-1d89-4434-9b90-90d8a93ba0c4",
+      "name": "Set MCP Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        352,
+        -320
+      ],
+      "notes": "Configuration de base pour les appels MCP"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.mcpUrl }}/mcp/v1/tools/{{ $json.toolName }}/call",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "arguments",
+              "value": "={{ JSON.stringify($json.toolArgs) }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "8192a4ca-29b3-4a8e-9ad1-442851ff49ae",
+      "name": "HTTP Request - MCP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        576,
+        -320
+      ],
+      "notes": "Appel générique au serveur MCP BunkerWeb"
+    },
+    {
+      "parameters": {
+        "model": "model-router",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAzureOpenAi",
+      "typeVersion": 1,
+      "position": [
+        272,
+        32
+      ],
+      "id": "b1d4e45a-4a51-428f-a0e8-bcca8fd2697d",
+      "name": "Azure OpenAI Chat Model",
+      "credentials": {
+        "azureOpenAiApi": {
+          "id": "ZsgGrh7II1G5monR",
+          "name": "Azure Open AI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "id": "fea27623-9ee6-4f95-8380-c8def8ce6d56",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        32
+      ]
+    },
+    {
+      "parameters": {
+        "name": "delete_service",
+        "description": "Supprime un service BunkerWeb avec le nom de domaine spécifié et des variables optionnelles",
+        "workflowId": "aSsMPaf1ayJGR6Tr",
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n  \"service\": \"example.com\"\n}"
+      },
+      "id": "46be7d21-795d-499f-88e6-523b82318ad6",
+      "name": "Tool - DeleteService",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "name": "update_service",
+        "description": "Modifie les parametres d'un service BunkerWeb spécifique par son nom\n",
+        "workflowId": "MwavAFX3QleNAKMR",
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n    \"service\": \"test.neus.dev\",\n    \"server_name\": \"test.neus.dev\",\n    \"is_draft\": false,\n    \"variables\": {\n      \"USE_ANTIBOT\": \"javascript\"\n    }\n  }"
+      },
+      "id": "faccaf2e-2f0e-475c-928d-8334b1fe247a",
+      "name": "Tool - Update Service",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        336
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Search Docs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - List Services": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Get Service": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Create Service": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Global Config": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - DeleteService": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - List Instances": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Reload Config": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Ban IP": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Unban IP": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - List Bans": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool - Update Service": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3ec8b9b1-a930-4440-8bae-816a7a00886a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "56af4bde70a47ae7d0f1ebb30e45ed336165d5c9ec00ba9a92311e33a4256d74"
+  },
+  "id": "zXynuRirDJ0cxGS5",
+  "tags": []
+}

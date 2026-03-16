@@ -1,0 +1,107 @@
+# Version control
+.git
+.gitignore
+.dockerignore
+
+# Environment files
+.env
+.env.local
+*.env.local
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Build outputs
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Dependency caches
+pip-wheel-metadata/
+*.whl
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+htmlcov/
+
+# Logs and coverage
+*.log
+.coverage
+coverage.xml
+*.cover
+.hypothesis/
+
+# Editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker leftovers
+Dockerfile.*~
+docker-compose*.yml
+.dockerignore
+
+# Documentation (not needed in container)
+docs/
+*.md
+!README.md
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+
+# Kubernetes manifests (not needed in container)
+deploy/
+
+# Test files (not needed in production image)
+tests/
+test_*.py
+*_test.py
+locustfile.py
+simple_loadtest.py
+
+# Scripts (development only)
+scripts/
+
+# n8n workflows (for external n8n instances)
+n8n-workflows/
+
+# Load test reports
+load-test-reports/
+*.html
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# MCP client config (local only)
+.mcp.json
+
+# Project planning docs
+CLAUDE.md
+
+# Git keep files
+.gitkeep
+
+# Backup files
+*.bak
+*.backup

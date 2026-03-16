@@ -1,0 +1,22 @@
+services:
+  # BunkerWeb MCP Server (lightweight, no ML dependencies)
+  bw-mcp:
+    build: .
+    container_name: bw-mcp
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    environment:
+      - BUNKERWEB_BASE_URL=${BUNKERWEB_BASE_URL:-http://localhost:8888}
+      # Search service connection (optional)
+      - SEARCH_MODE=${SEARCH_MODE:-disabled}
+      - SEARCH_API_URL=${SEARCH_API_URL:-https://search-url.example.com}
+      - SEARCH_TIMEOUT=${SEARCH_TIMEOUT:-10.0}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

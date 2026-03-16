@@ -1,0 +1,79 @@
+{
+  "name": "MCP Tool - List Services",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://bw-mcp:8080/rpc",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"tool\": \"list_services\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {\n    \"with_drafts\": {{ $json.with_drafts !== false }}\n  }\n}",
+        "options": {}
+      },
+      "id": "http-list-services",
+      "name": "HTTP Request - List Services",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formater la liste des services\nconst response = $input.item.json.result || $input.item.json;\nconst services = response.data || response.services || [];\n\nif (services.length === 0) {\n  return {\n    json: {\n      success: true,\n      message: \"Aucun service BunkerWeb configuré.\",\n      services: []\n    }\n  };\n}\n\nlet formattedText = `Services BunkerWeb configurés (${services.length}) :\\n\\n`;\n\nservices.forEach((svc, idx) => {\n  const status = svc.is_draft ? '📝 Brouillon' : '✅ En ligne';\n  const serviceName = svc.id || svc.SERVER_NAME || 'Unknown';\n  formattedText += `${idx + 1}. **${serviceName}** - ${status}\\n`;\n  formattedText += `   • Méthode: ${svc.method || 'N/A'}\\n`;\n  \n  if (svc.creation_date) {\n    const date = new Date(svc.creation_date).toLocaleString('fr-FR');\n    formattedText += `   • Créé le: ${date}\\n`;\n  }\n  \n  // Afficher quelques variables importantes si disponibles\n  if (svc.USE_MODSECURITY) {\n    formattedText += `   • ModSecurity: ${svc.USE_MODSECURITY}\\n`;\n  }\n  if (svc.USE_ANTIBOT) {\n    formattedText += `   • Antibot: ${svc.USE_ANTIBOT}\\n`;\n  }\n  formattedText += '\\n';\n});\n\nreturn {\n  json: {\n    success: true,\n    message: formattedText,\n    services: services,\n    count: services.length\n  }\n};"
+      },
+      "id": "code-format-services",
+      "name": "Code - Format Services",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - List Services",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - List Services": {
+      "main": [
+        [
+          {
+            "node": "Code - Format Services",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-12-27T00:00:00.000Z",
+  "versionId": "1"
+}

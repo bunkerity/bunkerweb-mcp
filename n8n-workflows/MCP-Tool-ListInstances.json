@@ -1,0 +1,81 @@
+{
+  "name": "MCP Tool - List Instances",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://bw-mcp:8080/rpc",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"tool\": \"list_instances\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {}\n}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "http-list-instances",
+      "name": "HTTP Request - List Instances",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formater la liste des instances\nconst response = $input.item.json.result || $input.item.json;\nconst instances = response.data || response.instances || [];\n\nif (instances.length === 0) {\n  return {\n    json: {\n      success: true,\n      message: \"Aucune instance BunkerWeb enregistrée.\",\n      instances: []\n    }\n  };\n}\n\nlet formattedText = `Instances BunkerWeb enregistrées (${instances.length}) :\\n\\n`;\n\ninstances.forEach((instance, idx) => {\n  const status = instance.status === 'up' || instance.status === 'running' ? '✅ Active' : '❌ Inactive';\n  formattedText += `${idx + 1}. **${instance.hostname}** - ${status}\\n`;\n  formattedText += `   • Type: ${instance.type || 'N/A'}\\n`;\n  \n  if (instance.method) {\n    formattedText += `   • Méthode: ${instance.method}\\n`;\n  }\n  if (instance.server_name) {\n    formattedText += `   • Server Name: ${instance.server_name}\\n`;\n  }\n  if (instance.last_seen) {\n    const lastSeen = new Date(instance.last_seen).toLocaleString('fr-FR');\n    formattedText += `   • Dernière activité: ${lastSeen}\\n`;\n  }\n  formattedText += '\\n';\n});\n\nreturn {\n  json: {\n    success: true,\n    message: formattedText,\n    instances: instances,\n    count: instances.length\n  }\n};"
+      },
+      "id": "code-format-instances",
+      "name": "Code - Format Instances",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - List Instances",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - List Instances": {
+      "main": [
+        [
+          {
+            "node": "Code - Format Instances",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-12-27T00:00:00.000Z",
+  "versionId": "1"
+}

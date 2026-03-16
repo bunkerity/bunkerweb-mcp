@@ -1,0 +1,94 @@
+# Prometheus alerting rules for MCP BunkerWeb
+
+groups:
+  - name: mcp_server
+    interval: 30s
+    rules:
+      # High error rate
+      - alert: HighToolErrorRate
+        expr: |
+          (
+            sum(rate(mcp_tool_calls_total{status!="success"}[5m]))
+            /
+            sum(rate(mcp_tool_calls_total[5m]))
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High tool error rate ({{ $value | humanizePercentage }})"
+          description: "More than 10% of tool calls are failing"
+
+      # High latency
+      - alert: HighToolLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(mcp_tool_duration_seconds_bucket[5m])
+          ) > 5.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High tool latency (P95: {{ $value }}s)"
+          description: "95th percentile tool execution time exceeds 5 seconds"
+
+      # BunkerWeb API errors
+      - alert: BunkerWebAPIErrors
+        expr: rate(bunkerweb_api_errors_total[5m]) > 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "BunkerWeb API errors detected"
+          description: "{{ $value }} errors per second to BunkerWeb API"
+
+      # No active connections (potential issue)
+      - alert: NoActiveWebSockets
+        expr: mcp_active_websockets == 0
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: "No active WebSocket connections"
+          description: "No clients connected for 30 minutes"
+
+      # Low cache hit rate
+      - alert: LowCacheHitRate
+        expr: |
+          (
+            sum(rate(mcp_cache_hits_total[5m]))
+            /
+            (sum(rate(mcp_cache_hits_total[5m])) + sum(rate(mcp_cache_misses_total[5m])))
+          ) < 0.3
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "Low cache hit rate ({{ $value | humanizePercentage }})"
+          description: "Cache hit rate is below 30%"
+
+  - name: service_health
+    interval: 30s
+    rules:
+      # Service down
+      - alert: MCPServerDown
+        expr: up{job="mcp-bunkerweb"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MCP BunkerWeb server is down"
+          description: "The MCP server has been down for more than 1 minute"
+
+      # BunkerWeb API unreachable
+      - alert: BunkerWebAPIUnreachable
+        expr: |
+          sum(rate(bunkerweb_api_requests_total{status="200"}[5m])) == 0
+          and
+          sum(rate(bunkerweb_api_requests_total[5m])) > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "BunkerWeb API is unreachable"
+          description: "All requests to BunkerWeb API are failing"

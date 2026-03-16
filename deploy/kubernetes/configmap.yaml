@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcp-bunkerweb-config
+  namespace: bunkerweb
+  labels:
+    app: mcp-bunkerweb
+    app.kubernetes.io/name: mcp-bunkerweb
+    app.kubernetes.io/component: config
+data:
+  # BunkerWeb API Configuration
+  BUNKERWEB_BASE_URL: "https://bunkerweb.example.com"
+  BUNKERWEB_REQUEST_TIMEOUT_SECONDS: "30"
+  BUNKERWEB_MAX_RETRIES: "3"
+  BUNKERWEB_RETRY_BACKOFF_INITIAL: "0.5"
+  BUNKERWEB_RETRY_BACKOFF_MAX: "5"
+
+  # Logging
+  BUNKERWEB_LOG_LEVEL: "INFO"
+
+  # MCP Transport Security (DNS Rebinding Protection)
+  MCP_ENABLE_DNS_REBINDING_PROTECTION: "true"
+  # Adjust these to match your Kubernetes service names and ingress hosts
+  MCP_ALLOWED_HOSTS: "mcp-bunkerweb,mcp-bunkerweb.bunkerweb,mcp-bunkerweb.bunkerweb.svc,mcp-bunkerweb.bunkerweb.svc.cluster.local,mcp-bunkerweb.example.com"
+  MCP_ALLOWED_ORIGINS: ""
+
+  # Performance Configuration
+  RATE_LIMIT_ENABLED: "false"
+  RATE_LIMIT_TOOLS: "30/minute"
+  RATE_LIMIT_RPC: "100/minute"
+  RATE_LIMIT_WS: "500/minute"
+  CACHE_ENABLED: "true"
+
+  # Semantic Search Configuration
+  SEARCH_MODE: "remote"
+  SEARCH_API_URL: "http://search-service:8001"
+  SEARCH_TIMEOUT: "10.0"

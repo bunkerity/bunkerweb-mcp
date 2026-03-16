@@ -1,0 +1,20 @@
+fastapi>=0.109.0
+uvicorn[standard]>=0.24.0
+httpx[http2]>=0.25.0
+pydantic>=2.4.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
+tenacity>=8.2.2
+mcp==1.26.0
+slowapi>=0.1.9
+aiocache>=0.12.2
+prometheus-client>=0.19.0
+opentelemetry-api>=1.21.0
+opentelemetry-sdk>=1.21.0
+opentelemetry-instrumentation-fastapi>=0.42b0
+opentelemetry-instrumentation-httpx>=0.42b0
+opentelemetry-exporter-otlp-proto-grpc>=1.21.0
+
+# NOTE: Semantic search ML dependencies (faiss, sentence-transformers, torch)
+# are now in the separate bunkerweb-search-service repository.
+# This MCP server uses a lightweight HTTP client to communicate with the search service.

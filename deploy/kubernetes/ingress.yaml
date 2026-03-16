@@ -1,0 +1,50 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mcp-bunkerweb
+  namespace: bunkerweb
+  labels:
+    app: mcp-bunkerweb
+    app.kubernetes.io/name: mcp-bunkerweb
+    app.kubernetes.io/component: ingress
+  annotations:
+    # BunkerWeb configuration annotations
+    # Global settings (apply to all hosts in this Ingress)
+    bunkerweb.io/AUTO_LETS_ENCRYPT: "yes"
+    bunkerweb.io/USE_REVERSE_PROXY: "yes"
+    bunkerweb.io/REVERSE_PROXY_URL: "/"
+    bunkerweb.io/REVERSE_PROXY_HOST: "http://mcp-bunkerweb.bunkerweb.svc.cluster.local:8080"
+
+    # Security settings
+    bunkerweb.io/USE_MODSECURITY: "yes"
+    bunkerweb.io/USE_ANTIBOT: "javascript"
+
+    # Performance settings
+    bunkerweb.io/USE_GZIP: "yes"
+    bunkerweb.io/USE_BROTLI: "yes"
+
+    # Custom limits
+    bunkerweb.io/MAX_CLIENT_SIZE: "8m"
+    bunkerweb.io/CLIENT_BODY_TIMEOUT: "30"
+    bunkerweb.io/CLIENT_HEADER_TIMEOUT: "30"
+
+    # Host-specific settings (optional - example for mcp-bunkerweb.example.com)
+    # bunkerweb.io/mcp-bunkerweb.example.com_USE_ANTIBOT: "captcha"
+    # bunkerweb.io/mcp-bunkerweb.example.com_CUSTOM_SETTING: "value"
+spec:
+  ingressClassName: bunkerweb
+  tls:
+    - hosts:
+        - mcp-bunkerweb.example.com
+      secretName: mcp-bunkerweb-tls
+  rules:
+    - host: mcp-bunkerweb.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mcp-bunkerweb
+                port:
+                  name: http

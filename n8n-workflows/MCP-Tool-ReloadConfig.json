@@ -1,0 +1,81 @@
+{
+  "name": "MCP Tool - Reload Config",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://bw-mcp:8080/rpc",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"tool\": \"reload_instances\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {\n    \"test\": {{ $json.query?.test !== undefined ? $json.query.test : ($json.test !== false) }}\n  }\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "http-reload-config",
+      "name": "HTTP Request - Reload Config",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formater la réponse de rechargement\nconst response = $input.item.json.result || $input.item.json;\nconst data = response.data || response;\n\nif (response.status !== 'success') {\n  return {\n    json: {\n      success: false,\n      message: `❌ Erreur lors du rechargement: ${response.msg || 'Erreur inconnue'}`,\n      error: response.msg\n    }\n  };\n}\n\nlet formattedText = '✅ **Configuration rechargée avec succès** ✅\\n\\n';\n\nif (data && typeof data === 'object') {\n  const instances = Object.keys(data);\n  formattedText += `**Instances rechargées (${instances.length}):**\\n\\n`;\n  \n  instances.forEach(instance => {\n    if (data[instance].status === 'success') {\n      formattedText += `• ${instance}: ✅ OK\\n`;\n    } else {\n      formattedText += `• ${instance}: ❌ ${data[instance].msg || 'Erreur'}\\n`;\n    }\n  });\n}\n\nreturn {\n  json: {\n    success: true,\n    message: formattedText,\n    data: data\n  }\n};"
+      },
+      "id": "code-format-response",
+      "name": "Code - Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Reload Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Reload Config": {
+      "main": [
+        [
+          {
+            "node": "Code - Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-12-27T00:00:00.000Z",
+  "versionId": "1"
+}

@@ -1,0 +1,79 @@
+{
+  "name": "MCP Tool - List Bans",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://bw-mcp:8080/rpc",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"tool\": \"list_bans\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {}\n}",
+        "options": {}
+      },
+      "id": "http-list-bans",
+      "name": "HTTP Request - List Bans",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formater la liste des bans\nconst response = $input.item.json.result || $input.item.json;\nconst data = response.data || response;\n\n// Collecter tous les bans de toutes les instances\nlet allBans = [];\nif (typeof data === 'object') {\n  for (const [instance, instanceData] of Object.entries(data)) {\n    // La structure réelle est instanceData.data (pas instanceData.bans)\n    const bans = instanceData.data || instanceData.bans || [];\n    if (Array.isArray(bans)) {\n      allBans = allBans.concat(bans.map(ban => ({\n        ...ban,\n        instance: instance\n      })));\n    }\n  }\n}\n\nif (allBans.length === 0) {\n  return {\n    json: {\n      success: true,\n      message: \"Aucune IP bannie actuellement.\",\n      bans: []\n    }\n  };\n}\n\nlet formattedText = `IPs bannies (${allBans.length}) :\\n\\n`;\n\nallBans.forEach((ban, idx) => {\n  formattedText += `${idx + 1}. **${ban.ip}**\\n`;\n  formattedText += `   • Instance: ${ban.instance}\\n`;\n  formattedText += `   • Raison: ${ban.reason || 'Non spécifiée'}\\n`;\n  \n  if (ban.exp === 0) {\n    formattedText += `   • Durée: Permanent\\n`;\n  } else {\n    const expiresIn = Math.floor(ban.exp / 3600);\n    formattedText += `   • Expire dans: ${expiresIn}h\\n`;\n  }\n  \n  if (ban.service) {\n    formattedText += `   • Service: ${ban.service}\\n`;\n  } else {\n    formattedText += `   • Scope: Global\\n`;\n  }\n  \n  if (ban.country) {\n    formattedText += `   • Pays: ${ban.country}\\n`;\n  }\n  \n  formattedText += '\\n';\n});\n\nreturn {\n  json: {\n    success: true,\n    message: formattedText,\n    bans: allBans,\n    count: allBans.length\n  }\n};"
+      },
+      "id": "code-format-bans",
+      "name": "Code - Format Bans",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - List Bans",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - List Bans": {
+      "main": [
+        [
+          {
+            "node": "Code - Format Bans",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-12-27T00:00:00.000Z",
+  "versionId": "1"
+}

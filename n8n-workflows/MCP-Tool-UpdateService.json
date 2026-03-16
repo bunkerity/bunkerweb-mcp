@@ -1,0 +1,81 @@
+{
+  "name": "MCP Tool - Update Service",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "execute-workflow-trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://bw-mcp:8080/rpc",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"tool\": \"update_service\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {\n    \"service\": \"{{ $json.query?.service || $json.service }}\",\n    \"server_name\": {{ ($json.query?.server_name || $json.server_name) ? '\"' + ($json.query?.server_name || $json.server_name) + '\"' : 'null' }},\n    \"is_draft\": {{ ($json.query?.is_draft !== undefined ? $json.query.is_draft : $json.is_draft) !== undefined ? ($json.query?.is_draft !== undefined ? $json.query.is_draft : $json.is_draft) : 'null' }},\n    \"variables\": {{ JSON.stringify($json.query?.variables || $json.variables || null) }}\n  }\n}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "http-update-service",
+      "name": "HTTP Request - Update Service",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Formater la réponse de mise à jour\nconst response = $input.item.json.result || $input.item.json;\nconst data = response.data || response;\n\nif (response.status !== 'success') {\n  return {\n    json: {\n      success: false,\n      message: `❌ Erreur lors de la mise à jour du service: ${response.msg || 'Erreur inconnue'}`,\n      error: response.msg\n    }\n  };\n}\n\n// Le nom du service peut être dans response.service, data.id, ou la clé d'objet dans data\nconst serviceName = response.service || data.id || (typeof data === 'object' && Object.keys(data)[0]) || 'inconnu';\nlet formattedText = `✅ Service **${serviceName}** mis à jour avec succès.\\n\\n`;\n\nif (data.last_update) {\n  const date = new Date(data.last_update).toLocaleString('fr-FR');\n  formattedText += `• Mis à jour le: ${date}\\n`;\n}\n\nformattedText += '\\n⚠️ N\\'oubliez pas de recharger la configuration avec `reload_config` pour appliquer les changements.';\n\nreturn {\n  json: {\n    success: true,\n    message: formattedText,\n    service: data\n  }\n};"
+      },
+      "id": "code-format-response",
+      "name": "Code - Format Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Update Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Update Service": {
+      "main": [
+        [
+          {
+            "node": "Code - Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-12-27T00:00:00.000Z",
+  "versionId": "1"
+}
