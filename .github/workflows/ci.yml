@@ -107,12 +107,13 @@ jobs:
             type=sha
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/heads/main') }}
 
-      - name: Build and push image
+      - name: Build image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: Dockerfile
-          push: true
+          push: false
+          load: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
@@ -122,7 +123,8 @@ jobs:
           image-ref: bunkerity/bunkerweb-mcp:latest
           format: "json"
           output: "trivy-results.json"
-        continue-on-error: true
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
 
       - name: Upload Trivy results
         uses: actions/upload-artifact@v4
@@ -130,3 +132,12 @@ jobs:
         with:
           name: trivy-report
           path: trivy-results.json
+
+      - name: Push image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
