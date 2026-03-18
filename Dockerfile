@@ -42,6 +42,7 @@ RUN apt-get update && \
 # Install Python packages from builder
 COPY --from=builder /wheels /wheels
 RUN pip install --no-cache-dir /wheels/* && \
+    pip uninstall -y setuptools wheel pip && \
     rm -rf /wheels ~/.cache/pip
 
 # Copy application code
