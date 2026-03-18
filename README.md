@@ -171,52 +171,81 @@ kubectl logs -n bunkerweb -l app=mcp-bunkerweb --tail=100 -f
 
 For detailed deployment instructions, troubleshooting, and configuration options, see [deploy/kubernetes/README.md](deploy/kubernetes/README.md).
 
-### Stdio mode (alternative, without Docker)
+### Stdio mode (recommended for local use)
 
-If you installed the package locally (`pip install -e .`), Claude Code can launch the server as a subprocess — no need to run Docker:
+If you installed the package locally (`pip install -e .`), Claude Code and VS Code can launch the server as a subprocess via stdio, without Docker.
 
-```bash
-claude mcp add --transport stdio bunkerweb --scope local -- bunkerweb-mcp
-```
+Configuration examples for Claude Code, VS Code, and Claude Desktop are in the dedicated section: **MCP integration > Stdio Transport**.
 
-Claude will start and stop the process automatically. This requires `BUNKERWEB_BASE_URL` and other settings to be configured in your environment or `.env` file.
+> **Important**: use the **absolute path** to the virtualenv binary in `command` (get it with `which bunkerweb-mcp`). Relative commands can fail because MCP clients do not inherit your shell PATH.
 
 ## MCP integration
 
 The server supports multiple transport protocols for MCP clients:
 
-### Stdio Transport (Recommended for Claude Code)
+### Stdio Transport (Recommended for Claude Code and VS Code)
 
-For local development with Claude Code CLI:
+#### Claude Code — `.mcp.json`
 
-```bash
-# Install the package
-pip install -e .
-
-# Configure Claude Code to use the MCP server
-claude mcp add --transport stdio bunkerweb --scope local -- \
-  bunkerweb-mcp
-
-# Verify the server is configured
-claude mcp list
-```
-
-Or add to your project's `.mcp.json`:
 ```json
 {
   "mcpServers": {
     "bunkerweb": {
-      "command": "bunkerweb-mcp",
+      "type": "stdio",
+      "command": "/path/to/your/.venv/bin/bunkerweb-mcp",
       "env": {
-        "BUNKERWEB_BASE_URL": "http://localhost:8888",
-        "BUNKERWEB_API_TOKEN": "${BUNKERWEB_API_TOKEN}"
+        "BUNKERWEB_BASE_URL": "http://<bunkerweb-api-host>:8888",
+        "BUNKERWEB_API_TOKEN": "your-api-token-here"
       }
     }
   }
 }
 ```
 
-**Note**: The stdio transport runs the server as a subprocess and communicates via stdin/stdout. This is the simplest way to integrate with Claude Code.
+#### VS Code — `.mcp.json`
+
+VS Code uses `servers` (not `mcpServers`):
+
+```json
+{
+  "servers": {
+    "bunkerweb": {
+      "type": "stdio",
+      "command": "/path/to/your/.venv/bin/bunkerweb-mcp",
+      "env": {
+        "BUNKERWEB_BASE_URL": "http://<bunkerweb-api-host>:8888",
+        "BUNKERWEB_API_TOKEN": "your-api-token-here"
+      }
+    }
+  }
+}
+```
+
+Adapt `command` to your actual virtualenv path (`which bunkerweb-mcp` after activating it) and set `BUNKERWEB_BASE_URL` to your BunkerWeb API address.
+
+For **Claude Desktop**, add the same block to your `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`, Linux: `~/.config/Claude/claude_desktop_config.json`) — the `type` field can be omitted as Desktop defaults to stdio:
+
+```json
+{
+  "mcpServers": {
+    "bunkerweb": {
+      "command": "/path/to/your/.venv/bin/bunkerweb-mcp",
+      "env": {
+        "BUNKERWEB_BASE_URL": "http://<bunkerweb-api-host>:8888",
+        "BUNKERWEB_API_TOKEN": "your-api-token-here"
+      }
+    }
+  }
+}
+```
+
+Verify the server is detected by Claude Code:
+```bash
+claude mcp list
+# bunkerweb: /path/to/your/.venv/bin/bunkerweb-mcp (stdio)
+```
+
+**Note**: The stdio transport runs the server as a subprocess communicating via stdin/stdout — no port, no Docker required.
 
 ### HTTP Transport (For Remote Servers)
 
