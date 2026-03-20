@@ -29,6 +29,6 @@ coverage.xml
 
 # Editor settings
 .idea/
-.vscode//.mcp.json
+.vscode/mcp.json
 .claude
 

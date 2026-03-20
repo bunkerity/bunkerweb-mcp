@@ -29,7 +29,7 @@ async def run_stdio() -> None:
 
     try:
         # Run the server in stdio mode
-        await server.run(transport="stdio")  # type: ignore
+        await server.run_stdio_async()
     finally:
         await client.close()
         LOGGER.info("BunkerWeb MCP server shutdown complete")
