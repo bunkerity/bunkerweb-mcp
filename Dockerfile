@@ -3,7 +3,7 @@
 # Lightweight MCP server image (no ML dependencies)
 # Search is handled by a separate bunkerweb-search-service
 
-FROM python:3.11-slim AS builder
+FROM python:3.11.15-slim-trixie@sha256:db3ff2e1800a8581e2c48a27c3995339d47bdf046da21c7627accd3d51053a93 AS builder
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -20,7 +20,7 @@ RUN pip install --upgrade pip && \
     pip wheel --wheel-dir /wheels .
 
 # Runtime stage
-FROM python:3.11-slim AS runtime
+FROM python:3.11.15-slim-trixie@sha256:db3ff2e1800a8581e2c48a27c3995339d47bdf046da21c7627accd3d51053a93 AS runtime
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -28,11 +28,6 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
-
-# Install curl for health checks
-RUN apt-get update && \
-    apt-get install --no-install-recommends -y curl && \
-    rm -rf /var/lib/apt/lists/*
 
 # Install Python packages from builder
 COPY --from=builder /wheels /wheels
@@ -53,6 +48,6 @@ ENV WORKERS=1
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health', timeout=5).close()"]
 
 CMD ["sh", "-c", "uvicorn bunkerweb_mcp.main:app --host 0.0.0.0 --port 8080 --workers ${WORKERS}"]
