@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 import pytest_asyncio
-from fastapi.testclient import TestClient
+from asgi import WebSocketSession
 from httpx import ASGITransport, AsyncClient
 from starlette.websockets import WebSocketDisconnect
 
@@ -284,7 +284,8 @@ async def test_rpc_token_mismatch(async_client) -> None:
     assert response.json()["detail"] == "Invalid MCP token"
 
 
-def test_websocket_rejects_invalid_token(app_fixture) -> None:
+@pytest.mark.asyncio
+async def test_websocket_rejects_invalid_token(app_fixture) -> None:
     app, tools, settings = app_fixture
     settings.websocket_token = "secret"
 
@@ -293,14 +294,14 @@ def test_websocket_rejects_invalid_token(app_fixture) -> None:
 
     tools.handlers["echo"] = handler
 
-    client = TestClient(app)
-    with client.websocket_connect("/ws?token=wrong") as ws:
+    async with WebSocketSession(app, "/ws?token=wrong") as ws:
         with pytest.raises(WebSocketDisconnect) as exc:
-            ws.receive_text()
+            await ws.receive_text()
         assert exc.value.code == 1008
 
 
-def test_websocket_executes_tool(app_fixture) -> None:
+@pytest.mark.asyncio
+async def test_websocket_executes_tool(app_fixture) -> None:
     app, tools, settings = app_fixture
     settings.websocket_token = "secret"
 
@@ -309,20 +310,19 @@ def test_websocket_executes_tool(app_fixture) -> None:
 
     tools.handlers["echo"] = handler
 
-    client = TestClient(app)
-    with client.websocket_connect("/ws?token=secret") as ws:
-        ws.send_text(json.dumps({"id": "req-1", "tool": "echo", "params": {"value": 42}}))
-        message = json.loads(ws.receive_text())
+    async with WebSocketSession(app, "/ws?token=secret") as ws:
+        await ws.send_text(json.dumps({"id": "req-1", "tool": "echo", "params": {"value": 42}}))
+        message = json.loads(await ws.receive_text())
         assert message == {"id": "req-1", "result": {"ok": 42}}
 
 
-def test_websocket_handles_unknown_tool(app_fixture) -> None:
+@pytest.mark.asyncio
+async def test_websocket_handles_unknown_tool(app_fixture) -> None:
     app, tools, settings = app_fixture
     settings.websocket_token = None
     tools.handlers.clear()
 
-    client = TestClient(app)
-    with client.websocket_connect("/ws") as ws:
-        ws.send_text(json.dumps({"id": "req-1", "tool": "missing", "params": {}}))
-        message = json.loads(ws.receive_text())
+    async with WebSocketSession(app, "/ws") as ws:
+        await ws.send_text(json.dumps({"id": "req-1", "tool": "missing", "params": {}}))
+        message = json.loads(await ws.receive_text())
         assert message["error"]["code"] == "unknown_tool"

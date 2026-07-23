@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .config import Settings
 
-DEFAULT_PROMPT_FILE = Path(__file__).resolve().parents[2] / "prompts" / "tool_prompts.json"
+DEFAULT_PROMPT_FILE = Path(__file__).with_name("data") / "tool_prompts.json"
 
 
 class PromptCatalog:

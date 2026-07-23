@@ -16,4 +16,5 @@ class ApiResponse(BaseModel):
 
     model_config = {
         "arbitrary_types_allowed": True,
+        "extra": "allow",
     }

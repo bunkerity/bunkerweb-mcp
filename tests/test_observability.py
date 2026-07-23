@@ -1,9 +1,10 @@
 """Tests for observability endpoints (metrics, health, readiness)."""
 
+import asyncio
 from unittest.mock import patch
 
+import httpx
 import pytest
-from fastapi.testclient import TestClient
 from prometheus_client import REGISTRY
 
 from bunkerweb_mcp.main import create_app
@@ -13,12 +14,48 @@ from bunkerweb_mcp.metrics import (
     tool_duration_seconds,
 )
 
+HTTPXAsyncClient = httpx.AsyncClient
+
+
+class ASGIClient:
+    """Minimal synchronous wrapper for HTTP-only ASGI tests."""
+
+    def __init__(self, app) -> None:  # type: ignore[no-untyped-def]
+        self.app = app
+
+    def get(self, path: str) -> httpx.Response:
+        async def request() -> httpx.Response:
+            async with HTTPXAsyncClient(
+                transport=httpx.ASGITransport(app=self.app),
+                base_url="http://test",
+            ) as client:
+                return await client.get(path)
+
+        return asyncio.run(request())
+
+
+class UnavailableUpstreamClient:
+    """Fail readiness probes immediately."""
+
+    async def __aenter__(self):  # type: ignore[no-untyped-def]
+        return self
+
+    async def __aexit__(self, *args) -> None:  # type: ignore[no-untyped-def]
+        return None
+
+    async def get(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+        raise httpx.ConnectError("unavailable")
+
 
 @pytest.fixture
 def client():
     """Create a test client."""
     app = create_app()
-    return TestClient(app)
+    with patch(
+        "bunkerweb_mcp.main.httpx.AsyncClient",
+        return_value=UnavailableUpstreamClient(),
+    ):
+        yield ASGIClient(app)
 
 
 class TestMetricsEndpoint:
@@ -217,7 +254,7 @@ class TestTracingIntegration:
     def test_tracing_can_be_disabled(self):
         """Test that tracing can be disabled via environment variable."""
         app = create_app()
-        test_client = TestClient(app)
+        test_client = ASGIClient(app)
 
         response = test_client.get("/health")
         assert response.status_code == 200
@@ -226,7 +263,7 @@ class TestTracingIntegration:
     def test_custom_otlp_endpoint(self):
         """Test that custom OTLP endpoint can be configured."""
         app = create_app()
-        test_client = TestClient(app)
+        test_client = ASGIClient(app)
 
         response = test_client.get("/health")
         assert response.status_code == 200

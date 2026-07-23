@@ -135,7 +135,7 @@ These metrics are more than sufficient for our use case (human interactions with
 ### Future Alternatives
 
 If FastMCP SDK presents major limitations in the future, migration to a custom implementation remains possible because:
-- Tool interface is decoupled from the SDK (see `tools.py`)
+- Tool interface is decoupled from the SDK (see `src/bunkerweb_mcp/tools/`)
 - MCP protocol is well documented
 - Business logic does not directly depend on the SDK
 

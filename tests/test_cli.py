@@ -29,7 +29,7 @@ async def test_run_stdio_initializes_components():
         mock_tools = MagicMock()
         mock_tools_class.return_value = mock_tools
         mock_server = AsyncMock()
-        mock_server.run = AsyncMock()
+        mock_server.run_stdio_async = AsyncMock()
         mock_create_server.return_value = mock_server
 
         # Run the function
@@ -44,7 +44,7 @@ async def test_run_stdio_initializes_components():
         mock_create_server.assert_called_once()
 
         # Verify server runs in stdio mode
-        mock_server.run.assert_called_once_with(transport="stdio")
+        mock_server.run_stdio_async.assert_awaited_once_with()
 
         # Verify client cleanup
         mock_client.close.assert_called_once()
@@ -68,9 +68,9 @@ async def test_run_stdio_cleans_up_on_exception():
         mock_client = AsyncMock()
         mock_client_class.return_value = mock_client
 
-        # Make server.run raise an exception
+        # Make the stdio runner raise an exception
         mock_server = AsyncMock()
-        mock_server.run = AsyncMock(side_effect=RuntimeError("Server failed"))
+        mock_server.run_stdio_async = AsyncMock(side_effect=RuntimeError("Server failed"))
         mock_create_server.return_value = mock_server
 
         # Run and expect exception
@@ -85,7 +85,7 @@ def test_main_runs_asyncio():
     """Test that main function runs the async run_stdio function."""
     with (
         patch("bunkerweb_mcp.cli.asyncio.run") as mock_asyncio_run,
-        patch("bunkerweb_mcp.cli.run_stdio"),
+        patch("bunkerweb_mcp.cli.run_stdio", new=MagicMock(return_value=None)),
     ):
         mock_asyncio_run.return_value = None
 
@@ -102,6 +102,7 @@ def test_main_handles_keyboard_interrupt():
     """Test that main handles KeyboardInterrupt gracefully."""
     with (
         patch("bunkerweb_mcp.cli.asyncio.run") as mock_asyncio_run,
+        patch("bunkerweb_mcp.cli.run_stdio", new=MagicMock(return_value=None)),
         patch("bunkerweb_mcp.cli.sys.exit") as mock_exit,
     ):
         mock_asyncio_run.side_effect = KeyboardInterrupt()
@@ -116,6 +117,7 @@ def test_main_handles_general_exception():
     """Test that main handles general exceptions."""
     with (
         patch("bunkerweb_mcp.cli.asyncio.run") as mock_asyncio_run,
+        patch("bunkerweb_mcp.cli.run_stdio", new=MagicMock(return_value=None)),
         patch("bunkerweb_mcp.cli.sys.exit") as mock_exit,
         patch("bunkerweb_mcp.cli.LOGGER") as mock_logger,
     ):
@@ -149,7 +151,7 @@ async def test_run_stdio_logs_startup_info():
         mock_client = AsyncMock()
         mock_client_class.return_value = mock_client
         mock_server = AsyncMock()
-        mock_server.run = AsyncMock()
+        mock_server.run_stdio_async = AsyncMock()
         mock_create_server.return_value = mock_server
 
         await run_stdio()
@@ -187,7 +189,7 @@ async def test_run_stdio_passes_settings_to_components():
         mock_tools = MagicMock()
         mock_tools_class.return_value = mock_tools
         mock_server = AsyncMock()
-        mock_server.run = AsyncMock()
+        mock_server.run_stdio_async = AsyncMock()
         mock_create_server.return_value = mock_server
 
         await run_stdio()

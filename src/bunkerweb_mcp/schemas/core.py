@@ -11,6 +11,10 @@ class PingResponse(ApiResponse):
     data: dict[str, Any] | None = None
 
 
+class AuthResponse(ApiResponse):
+    token: str
+
+
 class HealthResponse(BaseModel):
     status: str | None = None
     details: dict[str, Any] | None = None

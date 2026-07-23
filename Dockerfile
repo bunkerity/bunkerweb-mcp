@@ -12,16 +12,12 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
 
 WORKDIR /build
 
-# Install git for MCP SDK
-RUN apt-get update && \
-    apt-get install --no-install-recommends -y git && \
-    rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt ./
+COPY pyproject.toml README.md ./
+COPY src ./src
 
 # Build wheels (no PyTorch or ML dependencies needed)
 RUN pip install --upgrade pip && \
-    pip wheel --wheel-dir /wheels -r requirements.txt
+    pip wheel --wheel-dir /wheels .
 
 # Runtime stage
 FROM python:3.11-slim AS runtime
@@ -29,8 +25,7 @@ FROM python:3.11-slim AS runtime
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PYTHONPATH=/app/src
+    PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
@@ -44,11 +39,6 @@ COPY --from=builder /wheels /wheels
 RUN pip install --no-cache-dir /wheels/* && \
     pip uninstall -y setuptools wheel pip && \
     rm -rf /wheels ~/.cache/pip
-
-# Copy application code
-COPY src ./src
-COPY prompts ./prompts
-COPY .env.example ./.env.example
 
 # Search configuration (optional)
 # Set SEARCH_MODE=remote and SEARCH_API_URL to use search service

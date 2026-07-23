@@ -2,6 +2,8 @@
 
 A production-ready MCP server that exposes BunkerWeb's internal API to large language models via a constrained tool interface. The server provides both HTTP (for testing) and WebSocket (for MCP clients) JSON-RPC endpoints, strict input validation, and a resilient async client with retries.
 
+[BunkerWeb website](https://www.bunkerweb.io) · [Documentation](https://docs.bunkerweb.io)
+
 ## Quick Start with Claude Code
 
 ```bash
@@ -9,7 +11,7 @@ A production-ready MCP server that exposes BunkerWeb's internal API to large lan
 git clone https://github.com/bunkerity/bunkerweb-mcp.git
 cd bunkerweb-mcp
 
-# For demo/testing you dont need to change anything
+# For demo/testing you do not need to change anything
 # Configure environment
 cp .env.example .env
 # Edit .env to set BUNKERWEB_BASE_URL
@@ -24,15 +26,15 @@ claude
 > List my BunkerWeb services
 > Review @config://global for security improvements
 
-# If youu want to connect to a remote BunkerWeb mcp serveur 
-# We recommand to use BunkerWeb itself to protect the MCP service, and use SSL: 
+# To connect to a remote BunkerWeb MCP server,
+# use BunkerWeb itself to protect the service with TLS:
 claude mcp add --transport http bunkerweb http://remote-ip:8080/mcp/
 
 claude mcp add --transport http bunkerweb https://your-domain.com/mcp/
 ```
 
 ## Features
-- **37 comprehensive tools** covering all BunkerWeb operations (instances, services, configs, bans, plugins, jobs, cache)
+- **43 built-in API tools**, plus optional semantic search
 - **🔍 AI-powered semantic search in BunkerWeb Documentation** via remote search service (optional, configurable)
 - **MCP resources** for read-only data access (global config, job logs, active bans, instance status)
 - **Multiple transports**: Stdio (for Claude Code), HTTP, WebSocket
@@ -53,7 +55,7 @@ claude mcp add --transport http bunkerweb https://your-domain.com/mcp/
   - **Load testing suite** with Locust for performance validation
 
 ## Requirements
-- Access to a BunkerWeb API (default `http://localhost:8888`)
+- Access to a BunkerWeb API (tested with BunkerWeb 1.6.13 and current 1.6.14~rc1 development code; default `http://localhost:8888`)
 
 ## Installation
 
@@ -68,7 +70,7 @@ python -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install in development mode
-pip install -e .
+pip install -e ".[dev]"
 
 # Or install from requirements
 pip install -r requirements.txt
@@ -82,7 +84,6 @@ cp .env.example .env
 pip install bunkerweb-mcp
 ```
 
-The requirements file pulls the MCP SDK directly from GitHub; ensure `git` is installed on the host before installing dependencies.
 Update `.env` with your API base URL and either a token or basic credentials if required.
 
 ### Development Context
@@ -125,7 +126,7 @@ All settings are configurable via environment variables (see `.env.example`):
 ```bash
 docker compose up --build
 ```
-The compose file maps `host.docker.internal` so the container can reach a locally running BunkerWeb API on port `8888`.
+The compose file launches a BunkerWeb 1.6.13 demo stack and connects the MCP server to its API.
 
 #### Local (uvicorn)
 ```bash
@@ -315,17 +316,8 @@ SEARCH_TIMEOUT=10.0
 
 ### Using with Docker Compose
 
-The included `docker-compose.yml` runs both services:
-
-```bash
-# Start both MCP and search service
-docker-compose up -d
-
-# Check search service health
-curl http://localhost:8000/health
-
-# MCP server will automatically use search service
-```
+The included `docker-compose.yml` disables search because no search container is bundled. To
+use a deployed search service, set `SEARCH_MODE=remote` and provide its `SEARCH_API_URL`.
 
 ### Disable Search
 
@@ -335,7 +327,6 @@ To run the MCP server without search:
 # In .env
 SEARCH_MODE=disabled
 
-# In docker-compose.yml, comment out search-service
 ```
 
 ## Tool catalogue
@@ -361,12 +352,12 @@ Query the `/tools` endpoint for JSON descriptors. Available tools include:
 - `get_service`: Fetch details for a specific service (`service`, `full`, `methods`, `with_drafts`)
 - `delete_service`: Delete a service (`service`)
 
-And 27 more tools covering configs, plugins, jobs, and cache management.
+And 32 more built-in tools covering authentication, configs, plugins, jobs, and cache management.
 
 Each descriptor now carries a `prompt` field sourced from the prompt catalog. MCP clients can surface these short instructions to keep assistant answers consistent across tools.
 
 ## Prompt catalog
-The server ships with `prompts/tool_prompts.json`, a curated set of guidance strings keyed by tool name. At startup the catalog is loaded once and injected into tool descriptors as well as every RPC/WebSocket response. Override the location with `BUNKERWEB_PROMPT_CATALOG` if you need custom wording.
+The package ships with `bunkerweb_mcp/data/tool_prompts.json`, a curated set of guidance strings keyed by tool name. At startup the catalog is loaded once and injected into tool descriptors as well as every RPC/WebSocket response. Override the location with `BUNKERWEB_PROMPT_CATALOG` if you need custom wording.
 
 ## JSON-RPC usage
 ### HTTP example
@@ -396,7 +387,7 @@ src/bunkerweb_mcp/
 ├─ cli.py                 # CLI entry point for stdio mode
 ├─ mcp_adapter.py         # MCP server integration
 ├─ client.py              # Resilient async client for BunkerWeb
-├─ tools.py               # MCP tools with strict validation
+├─ tools/                 # MCP tools with strict validation
 ├─ config.py              # Environment-driven settings
 ├─ prompt_catalog.py      # Prompt loading helpers
 ├─ exceptions.py          # Domain-specific exceptions
@@ -404,7 +395,7 @@ src/bunkerweb_mcp/
 ├─ schemas/               # Pydantic models for requests/responses
 └─ utils/logging.py       # Structured logging helpers
 
-prompts/
+src/bunkerweb_mcp/data/
 └─ tool_prompts.json      # Default tool prompts exposed to MCP clients
 ```
 
@@ -639,9 +630,7 @@ See [docs/security.md](docs/security.md) for detailed configuration guide.
 ### Project Documentation
 
 - **[Architecture Decision Records (ADR)](docs/adr/README.md)** - Major architectural decisions with context and rationale
-- **[Sprint 3: Maintenability](docs/SPRINT_3_MAINTENABILITY.md)** - Code quality and documentation improvements
 - **[Observability Guide](docs/OBSERVABILITY.md)** - Complete guide to metrics, tracing, and monitoring (Sprint 4)
-- **[Migration Guide](MIGRATION.md)** - Guide for upgrading from v1.x to v2.x
 - **[Security Guide](docs/security.md)** - DNS rebinding protection and security best practices
 - **[Claude Development Guide](CLAUDE.md)** - BunkerWeb expertise for Claude Code
 
@@ -654,7 +643,7 @@ All tool handlers include comprehensive Google-style docstrings with:
 - Exception handling guidance
 - Usage examples
 
-Example: [src/bunkerweb_mcp/tools.py](src/bunkerweb_mcp/tools.py) contains 40+ fully documented handlers.
+Example: [src/bunkerweb_mcp/tools/registry.py](src/bunkerweb_mcp/tools/registry.py) registers all built-in handlers.
 
 ### Architecture Decisions
 

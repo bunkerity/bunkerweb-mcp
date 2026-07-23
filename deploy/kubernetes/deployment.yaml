@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
         - name: mcp-bunkerweb
-          image: docker.io/bunkerity/mcp-bunkerweb:latest
+          image: docker.io/bunkerity/bunkerweb-mcp:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: WORKERS

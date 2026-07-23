@@ -1,15 +1,15 @@
 import json
-from pathlib import Path
 from unittest.mock import patch
 
 import httpx
 import pytest
+from asgi import WebSocketSession
 from fastapi import status
-from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
 from bunkerweb_mcp.config import Settings
 from bunkerweb_mcp.main import LOGGER, create_app
+from bunkerweb_mcp.prompt_catalog import DEFAULT_PROMPT_FILE
 from bunkerweb_mcp.schemas.bans import BansResponse
 from bunkerweb_mcp.schemas.common import ApiResponse
 from bunkerweb_mcp.schemas.configs import ConfigResponse, ConfigsResponse
@@ -114,8 +114,7 @@ CONFIG_ITEM_PAYLOAD = {
 
 CONFIG_LIST_PAYLOAD = [CONFIG_ITEM_PAYLOAD]
 
-PROMPTS_PATH = Path(__file__).resolve().parents[1] / "prompts" / "tool_prompts.json"
-TOOL_PROMPTS = json.loads(PROMPTS_PATH.read_text(encoding="utf-8")).get("tools", {})
+TOOL_PROMPTS = json.loads(DEFAULT_PROMPT_FILE.read_text(encoding="utf-8")).get("tools", {})
 
 
 BANS_LIST_PAYLOAD = {
@@ -925,29 +924,31 @@ async def test_rpc_global_config_update_returns_payload(app) -> None:
     assert result == {"status": "success"}
 
 
-def test_websocket_requires_token(app) -> None:
-    with (
-        TestClient(app) as client,
-        pytest.raises(WebSocketDisconnect) as exc_info,
-        client.websocket_connect("/ws") as ws,
-    ):
-        ws.receive_json()
+@pytest.mark.asyncio
+async def test_websocket_requires_token(app) -> None:
+    async with WebSocketSession(app, "/ws") as ws:
+        with pytest.raises(WebSocketDisconnect) as exc_info:
+            await ws.receive_json()
     assert exc_info.value.code == status.WS_1008_POLICY_VIOLATION
 
 
-def test_websocket_ping_flow(app) -> None:
-    with TestClient(app) as client, client.websocket_connect("/ws?token=secret") as ws:
-        ws.send_json({"id": "1", "tool": "ping", "params": {}})
-        message = ws.receive_json()
+@pytest.mark.asyncio
+async def test_websocket_ping_flow(app) -> None:
+    async with WebSocketSession(app, "/ws?token=secret") as ws:
+        await ws.send_json({"id": "1", "tool": "ping", "params": {}})
+        message = await ws.receive_json()
+    assert isinstance(message, dict)
     assert message["id"] == "1"
     assert message["result"]["status"] == "ok"
     assert message["result"]["message"] == "pong"
 
 
-def test_websocket_missing_tool_error(app) -> None:
-    with TestClient(app) as client, client.websocket_connect("/ws?token=secret") as ws:
-        ws.send_json({"id": "abc"})
-        message = ws.receive_json()
+@pytest.mark.asyncio
+async def test_websocket_missing_tool_error(app) -> None:
+    async with WebSocketSession(app, "/ws?token=secret") as ws:
+        await ws.send_json({"id": "abc"})
+        message = await ws.receive_json()
+    assert isinstance(message, dict)
     assert message["id"] == "abc"
     assert message["error"] == {
         "code": "missing_tool",
@@ -955,8 +956,9 @@ def test_websocket_missing_tool_error(app) -> None:
     }
 
 
-def test_websocket_invalid_json(app) -> None:
-    with TestClient(app) as client, client.websocket_connect("/ws?token=secret") as ws:
-        ws.send_text("not-json")
-        message = ws.receive_json()
+@pytest.mark.asyncio
+async def test_websocket_invalid_json(app) -> None:
+    async with WebSocketSession(app, "/ws?token=secret") as ws:
+        await ws.send_text("not-json")
+        message = await ws.receive_json()
     assert message == {"error": {"code": "invalid_json", "message": "Invalid JSON"}}

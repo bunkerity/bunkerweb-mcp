@@ -26,13 +26,15 @@ class ConfigCreateRequest(BaseModel):
     type: str = Field(..., min_length=1, description="Configuration type")
     name: str = Field(..., min_length=1, description="Configuration name")
     data: str = Field(..., description="Configuration content as UTF-8 text")
+    is_draft: bool = Field(False, description="Mark the configuration as draft")
 
 
 class ConfigUpdateRequest(BaseModel):
-    new_service: str | None = Field(default=None, description="New service identifier")
-    new_type: str | None = Field(default=None, description="New configuration type")
-    new_name: str | None = Field(default=None, description="New configuration name")
+    service: str | None = Field(default=None, description="New service identifier")
+    type: str | None = Field(default=None, description="New configuration type")
+    name: str | None = Field(default=None, description="New configuration name")
     data: str | None = Field(default=None, description="New configuration content")
+    is_draft: bool | None = Field(default=None, description="Update draft state")
 
 
 class ConfigsDeleteRequest(BaseModel):

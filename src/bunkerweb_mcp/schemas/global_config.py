@@ -12,7 +12,7 @@ from .common import ApiResponse
 class GlobalConfigResponse(ApiResponse):
     data: dict[str, Any] | None = Field(
         default=None,
-        validation_alias=AliasChoices("data", "config"),
+        validation_alias=AliasChoices("data", "config", "settings"),
     )
 
 

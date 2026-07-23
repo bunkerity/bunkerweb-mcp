@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ..schemas.cache import CacheFilesDeleteRequest
     from ..schemas.common import ApiResponse
     from ..schemas.configs import ConfigUpdateRequest
-    from ..schemas.core import HealthResponse, PingResponse
+    from ..schemas.core import AuthResponse, HealthResponse, PingResponse
     from ..schemas.instances import (
         InstanceCreateRequest,
         InstancesDeleteRequest,
@@ -33,7 +33,7 @@ class BunkerWebClientProtocol(Protocol):
         username: str | None,
         password: str | None,
         payload: dict[str, Any] | None,
-    ) -> ApiResponse: ...
+    ) -> AuthResponse: ...
 
     async def ping(self) -> PingResponse: ...
 
@@ -119,6 +119,7 @@ class BunkerWebClientProtocol(Protocol):
         files: list[tuple[str, bytes]],
         config_type: str,
         service: str | None,
+        is_draft: bool,
     ) -> ApiResponse: ...
 
     async def update_config_upload(
@@ -130,6 +131,7 @@ class BunkerWebClientProtocol(Protocol):
         new_service: str | None,
         new_type: str | None,
         new_name: str | None,
+        new_is_draft: bool | None,
     ) -> ApiResponse: ...
 
     async def list_plugins(self, *, plugin_type: str, with_data: bool) -> ApiResponse: ...
@@ -317,6 +319,7 @@ class ConfigKeyParams(_BaseToolParams):
 
 class ConfigCreateParams(ConfigKeyParams):
     data: str = Field(..., description="Configuration content")
+    is_draft: bool = Field(default=False, description="Create as draft")
 
 
 class ConfigUpdateParams(ConfigKeyParams):
@@ -324,6 +327,7 @@ class ConfigUpdateParams(ConfigKeyParams):
     new_type: str | None = Field(default=None)
     new_name: str | None = Field(default=None)
     data: str | None = Field(default=None)
+    is_draft: bool | None = Field(default=None)
 
 
 class ConfigUploadFile(BaseModel):
@@ -338,6 +342,7 @@ class ConfigUploadParams(_BaseToolParams):
     config_type: str = Field(..., description="Configuration type")
     service: str | None = Field(default=None, description="Service identifier or global")
     files: list[ConfigUploadFile] = Field(..., min_length=1)
+    is_draft: bool = Field(default=False, description="Create as draft")
 
 
 class ConfigUploadUpdateParams(ConfigKeyParams):
@@ -345,6 +350,7 @@ class ConfigUploadUpdateParams(ConfigKeyParams):
     new_service: str | None = Field(default=None)
     new_type: str | None = Field(default=None)
     new_name: str | None = Field(default=None)
+    new_is_draft: bool | None = Field(default=None)
 
 
 class ConfigsDeleteParams(_BaseToolParams):

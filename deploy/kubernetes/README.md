@@ -102,7 +102,7 @@ curl http://localhost:8080/ready
 ### Deployment Configuration
 
 **Key Settings**:
-- **Image**: `docker.io/bunkerity/mcp-bunkerweb:latest`
+- **Image**: `docker.io/bunkerity/bunkerweb-mcp:latest`
 - **Replicas**: 2 (minimum for HA)
 - **Workers**: 4 per pod (configurable via `WORKERS` env var)
 - **Resources**:
@@ -242,7 +242,7 @@ kubectl logs -n bunkerweb -l app=mcp-bunkerweb --tail=100
 
 # Common issues:
 # - Missing secrets: Apply secret.local.yaml
-# - Image pull errors: Verify docker.io/bunkerity/mcp-bunkerweb:latest exists
+# - Image pull errors: Verify docker.io/bunkerity/bunkerweb-mcp:latest exists
 # - ConfigMap missing: Apply configmap.yaml
 ```
 
@@ -295,7 +295,7 @@ kubectl get pod -n bunkerweb -l app=mcp-bunkerweb -o jsonpath='{.items[0].metada
 ```bash
 # Update image tag in deployment.yaml
 kubectl set image deployment/mcp-bunkerweb \
-  mcp-bunkerweb=docker.io/bunkerity/mcp-bunkerweb:v0.2.0 \
+  mcp-bunkerweb=docker.io/bunkerity/bunkerweb-mcp:v0.2.0 \
   -n bunkerweb
 
 # Watch rollout
@@ -383,6 +383,6 @@ spec:
 ## Support
 
 For issues and questions:
-- GitHub Issues: https://github.com/bunkerity/mcp-bunkerweb/issues
+- GitHub Issues: https://github.com/bunkerity/bunkerweb-mcp/issues
 - Documentation: See [../../docs/](../../docs/)
 - BunkerWeb Docs: https://docs.bunkerweb.io

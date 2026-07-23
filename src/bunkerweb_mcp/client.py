@@ -23,7 +23,7 @@ from .schemas.configs import (
     ConfigsResponse,
     ConfigUpdateRequest,
 )
-from .schemas.core import HealthResponse, PingResponse
+from .schemas.core import AuthResponse, HealthResponse, PingResponse
 from .schemas.global_config import GlobalConfigResponse, GlobalConfigUpdate
 from .schemas.instances import (
     InstanceCreateRequest,
@@ -145,7 +145,7 @@ class BunkerWebClient:
         username: str | None = None,
         password: str | None = None,
         payload: dict[str, Any] | None = None,
-    ) -> ApiResponse:
+    ) -> AuthResponse:
         headers: dict[str, str] = {}
         body: dict[str, Any] = payload.copy() if payload else {}
         if username is not None:
@@ -161,7 +161,7 @@ class BunkerWebClient:
         if headers:
             kwargs["headers"] = {**self._client.headers, **headers}
         response = await self._request("POST", "/auth", **kwargs)
-        return ApiResponse.model_validate(response.json())
+        return AuthResponse.model_validate(response.json())
 
     async def ping(self) -> PingResponse:
         return await self._request_json("GET", "/ping", response_model=PingResponse)
@@ -457,9 +457,10 @@ class BunkerWebClient:
         files: list[tuple[str, bytes]],
         config_type: str,
         service: str | None = None,
+        is_draft: bool = False,
     ) -> ConfigsResponse:
         form_files = [("files", (filename, content)) for filename, content in files]
-        data = {"type": config_type}
+        data = {"type": config_type, "is_draft": str(is_draft).lower()}
         if service is not None:
             data["service"] = service
         response = await self._request(
@@ -479,6 +480,7 @@ class BunkerWebClient:
         new_service: str | None = None,
         new_type: str | None = None,
         new_name: str | None = None,
+        new_is_draft: bool | None = None,
     ) -> ConfigResponse:
         data: dict[str, Any] = {}
         if new_service is not None:
@@ -487,6 +489,8 @@ class BunkerWebClient:
             data["new_type"] = new_type
         if new_name is not None:
             data["new_name"] = new_name
+        if new_is_draft is not None:
+            data["new_is_draft"] = str(new_is_draft).lower()
         response = await self._request(
             "PATCH",
             f"/configs/{key.service or 'global'}/{key.type}/{key.name}/upload",

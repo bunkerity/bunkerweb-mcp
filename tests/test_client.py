@@ -21,7 +21,7 @@ from bunkerweb_mcp.schemas.configs import (
     ConfigsResponse,
     ConfigUpdateRequest,
 )
-from bunkerweb_mcp.schemas.core import HealthResponse, PingResponse
+from bunkerweb_mcp.schemas.core import AuthResponse, HealthResponse, PingResponse
 from bunkerweb_mcp.schemas.global_config import GlobalConfigResponse
 from bunkerweb_mcp.schemas.instances import (
     InstanceCreateRequest,
@@ -154,13 +154,15 @@ CONFIG_CREATE_PAYLOAD = ConfigCreateRequest(
     type="http",
     name="snippet",
     data="content",
+    is_draft=True,
 )
 
 CONFIG_UPDATE_PAYLOAD = ConfigUpdateRequest(
-    new_service="svc2",
-    new_type="http",
-    new_name="snippet2",
+    service="svc2",
+    type="http",
+    name="snippet2",
     data="updated",
+    is_draft=True,
 )
 
 CONFIG_KEY_GLOBAL = ConfigKey(service=None, type="http", name="snippet")
@@ -687,13 +689,13 @@ class DummyResponse:
 @pytest.mark.asyncio
 async def test_authenticate_builds_basic_headers(monkeypatch: pytest.MonkeyPatch) -> None:
     client = BunkerWebClient(_make_settings())
-    mock = AsyncMock(return_value=DummyResponse({"status": "success"}))
+    mock = AsyncMock(return_value=DummyResponse({"token": "biscuit"}))
     monkeypatch.setattr(client, "_request", mock)
 
     result = await client.authenticate(username="alice", password="secret")
 
-    assert isinstance(result, ApiResponse)
-    assert result.status == "success"
+    assert isinstance(result, AuthResponse)
+    assert result.token == "biscuit"
     mock.assert_awaited_once()
     await_call = mock.await_args_list[0]
     assert await_call.kwargs["json"] == {"username": "alice", "password": "secret"}
@@ -722,14 +724,19 @@ async def test_upload_configs_forms_payload(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setattr(client, "_request", mock)
 
     files = [("config.conf", b"content")]
-    result = await client.upload_configs(files=files, config_type="http", service="svc")
+    result = await client.upload_configs(
+        files=files,
+        config_type="http",
+        service="svc",
+        is_draft=True,
+    )
 
     assert isinstance(result, ConfigsResponse)
     mock.assert_awaited_once_with(
         "POST",
         "/configs/upload",
         files=[("files", ("config.conf", b"content"))],
-        data={"type": "http", "service": "svc"},
+        data={"type": "http", "is_draft": "true", "service": "svc"},
     )
     await client.close()
 
@@ -748,6 +755,7 @@ async def test_update_config_upload_accepts_rename(monkeypatch: pytest.MonkeyPat
         new_service="svc",
         new_type="http",
         new_name="renamed",
+        new_is_draft=True,
     )
 
     assert isinstance(result, ConfigResponse)
@@ -755,9 +763,56 @@ async def test_update_config_upload_accepts_rename(monkeypatch: pytest.MonkeyPat
         "PATCH",
         "/configs/global/http/snippet/upload",
         files={"file": ("config.conf", b"content")},
-        data={"new_service": "svc", "new_type": "http", "new_name": "renamed"},
+        data={
+            "new_service": "svc",
+            "new_type": "http",
+            "new_name": "renamed",
+            "new_is_draft": "true",
+        },
     )
     await client.close()
+
+
+@pytest.mark.parametrize(
+    ("model", "payload", "expected"),
+    [
+        (
+            GlobalConfigResponse,
+            {"status": "success", "settings": {"MULTISITE": "yes"}},
+            {"MULTISITE": "yes"},
+        ),
+        (
+            PluginsResponse,
+            {"status": "success", "plugins": [{"id": "example"}]},
+            [{"id": "example"}],
+        ),
+        (
+            CacheResponse,
+            {"status": "success", "cache": [{"file_name": "jobs.json"}]},
+            [{"file_name": "jobs.json"}],
+        ),
+    ],
+)
+def test_oss_collection_response_shapes(
+    model: type[ApiResponse],
+    payload: dict[str, Any],
+    expected: Any,
+) -> None:
+    response = model.model_validate(payload)
+
+    assert response.data == expected
+
+
+def test_api_response_preserves_endpoint_metadata() -> None:
+    response = ApiResponse.model_validate(
+        {
+            "status": "partial",
+            "created": ["global/http/example"],
+            "errors": [{"file": "bad.conf", "error": "invalid"}],
+        }
+    )
+
+    assert response.model_dump(exclude_none=True)["created"] == ["global/http/example"]
 
 
 @pytest.mark.asyncio

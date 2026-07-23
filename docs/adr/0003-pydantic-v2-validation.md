@@ -170,7 +170,7 @@ model_config = ConfigDict(extra='forbid')
 
 ### Use cases in the project
 
-1. **Tool Parameters** (`src/bunkerweb_mcp/tools.py`):
+1. **Tool Parameters** (`src/bunkerweb_mcp/tools/params.py`):
    ```python
    class BanParams(_BaseToolParams):
        bans: list[BanPayload] = Field(..., min_length=1)

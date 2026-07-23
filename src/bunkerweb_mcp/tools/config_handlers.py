@@ -104,10 +104,12 @@ async def handle_update_config(
 ) -> dict[str, Any]:
     """Update or rename a configuration snippet."""
     key = _build_config_key(params)
-    payload = ConfigUpdateRequest.model_validate(
-        params.model_dump(
-            include={"new_service", "new_type", "new_name", "data"}, exclude_none=True
-        )
+    payload = ConfigUpdateRequest(
+        service=params.new_service if params.new_service is not None else params.service,
+        type=params.new_type,
+        name=params.new_name,
+        data=params.data,
+        is_draft=params.is_draft,
     )
     response = await client.update_config(key, payload)
     return _serialize_response(response)
@@ -141,6 +143,7 @@ async def handle_upload_configs(
         files=files,
         config_type=params.config_type,
         service=params.service,
+        is_draft=params.is_draft,
     )
     return _serialize_response(response)
 
@@ -158,5 +161,6 @@ async def handle_update_config_upload(
         new_service=params.new_service,
         new_type=params.new_type,
         new_name=params.new_name,
+        new_is_draft=params.new_is_draft,
     )
     return _serialize_response(response)

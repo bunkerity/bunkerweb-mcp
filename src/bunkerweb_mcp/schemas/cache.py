@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 from .common import ApiResponse
 
@@ -23,4 +23,7 @@ class CacheFilesDeleteRequest(BaseModel):
 
 
 class CacheResponse(ApiResponse):
-    data: list[dict[str, Any]] | None = None
+    data: list[dict[str, Any]] | None = Field(
+        default=None,
+        validation_alias=AliasChoices("data", "cache"),
+    )

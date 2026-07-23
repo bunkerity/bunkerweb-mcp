@@ -15,7 +15,7 @@ from bunkerweb_mcp.schemas.configs import (
     ConfigsDeleteRequest,
     ConfigUpdateRequest,
 )
-from bunkerweb_mcp.schemas.core import HealthResponse, PingResponse
+from bunkerweb_mcp.schemas.core import AuthResponse, HealthResponse, PingResponse
 from bunkerweb_mcp.schemas.global_config import GlobalConfigResponse
 from bunkerweb_mcp.schemas.instances import (
     InstanceCreateRequest,
@@ -295,9 +295,7 @@ async def test_tools_delegate_simple_calls(
 
 @pytest.mark.asyncio
 async def test_authenticate_tool_success() -> None:
-    client = SimpleNamespace(
-        authenticate=AsyncMock(return_value=ApiResponse(status="success", message="token"))
-    )
+    client = SimpleNamespace(authenticate=AsyncMock(return_value=AuthResponse(token="biscuit")))
     tools = Tools(client)  # type: ignore[arg-type]
     handler = tools.get_tool("authenticate")
     assert handler is not None
@@ -306,7 +304,7 @@ async def test_authenticate_tool_success() -> None:
         {"username": "alice", "password": "secret", "payload": {"scope": "admin"}}
     )
 
-    assert result["message"] == "token"
+    assert result["token"] == "biscuit"
     call = client.authenticate.await_args_list[0]
     assert call.kwargs == {
         "username": "alice",
@@ -639,11 +637,20 @@ async def test_config_create_tool_builds_model() -> None:
     handler = tools.get_tool("config_create")
     assert handler is not None
 
-    await handler({"service": "svc", "type": "http", "name": "snippet", "data": "value"})
+    await handler(
+        {
+            "service": "svc",
+            "type": "http",
+            "name": "snippet",
+            "data": "value",
+            "is_draft": True,
+        }
+    )
 
     payload = client.create_config.await_args_list[0].args[0]
     assert isinstance(payload, ConfigCreateRequest)
     assert payload.data == "value"
+    assert payload.is_draft is True
 
 
 @pytest.mark.asyncio
@@ -662,6 +669,7 @@ async def test_config_update_tool_builds_models() -> None:
             "name": "old",
             "new_name": "new",
             "data": "content",
+            "is_draft": True,
         }
     )
 
@@ -670,7 +678,9 @@ async def test_config_update_tool_builds_models() -> None:
     payload = call.args[1]
     assert isinstance(key, ConfigKey)
     assert isinstance(payload, ConfigUpdateRequest)
-    assert payload.new_name == "new"
+    assert payload.service == "svc"
+    assert payload.name == "new"
+    assert payload.is_draft is True
 
 
 @pytest.mark.asyncio
@@ -705,11 +715,13 @@ async def test_configs_upload_tool_decodes_files() -> None:
             "files": [
                 {"filename": "file.conf", "content_base64": "Y29udGVudA=="},
             ],
+            "is_draft": True,
         }
     )
 
     files = client.upload_configs.await_args_list[0].kwargs["files"]
     assert files == [("file.conf", b"content")]
+    assert client.upload_configs.await_args_list[0].kwargs["is_draft"] is True
 
 
 @pytest.mark.asyncio
@@ -728,6 +740,7 @@ async def test_config_upload_update_tool_handles_rename() -> None:
             "name": "snippet",
             "file": {"filename": "conf", "content_base64": "YQ=="},
             "new_service": "svc",
+            "new_is_draft": True,
         }
     )
 
@@ -738,6 +751,7 @@ async def test_config_upload_update_tool_handles_rename() -> None:
     assert call.kwargs["file_name"] == "conf"
     assert call.kwargs["content"] == b"a"
     assert call.kwargs["new_service"] == "svc"
+    assert call.kwargs["new_is_draft"] is True
 
 
 @pytest.mark.asyncio
