@@ -29,6 +29,9 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
 
 WORKDIR /app
 
+# Fix CVEs
+RUN apt-get update && apt-get install -y --no-install-recommends bsdutils libblkid1 liblastlog2-2 libmount1 libsmartcols1 libuuid1 login mount util-linux && rm -rf /var/lib/apt/lists/* # util-linux 2.41-5 -> 2.41.5-0+deb13u1, still shipped vulnerable by the base image: CVE-2026-53612 CVE-2026-53613 CVE-2026-53614 CVE-2026-53615
+
 # Install Python packages from builder
 COPY --from=builder /wheels /wheels
 RUN pip install --no-cache-dir /wheels/* && \
