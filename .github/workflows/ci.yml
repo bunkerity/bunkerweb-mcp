@@ -207,8 +207,6 @@ jobs:
           load: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=bunkerweb-mcp-amd64-${{ github.ref_name }}
-          cache-to: type=gha,mode=max,scope=bunkerweb-mcp-amd64-${{ github.ref_name }}
       - name: Start container
         run: |
           docker run --detach --name bunkerweb-mcp-amd64 --platform linux/amd64 \

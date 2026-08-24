@@ -51,6 +51,11 @@ past tag. `verify-attestation: true` keeps the sigstore/SLSA provenance check
 on the downloaded binary; `score-push: true` publishes the score used by the
 hosted badge service.
 
+Publishing jobs deliberately restore no build cache. GitHub Actions caches are
+shared across branches, so a run on any branch can populate the entry a publish
+job would restore (ISSUE-705); the AMD64 image that `ci.yml` pushes is therefore
+built cold, while the non-publishing ARM64 test build keeps its ref-scoped cache.
+
 Each run also uploads a `plumber-report` artifact holding the JSON report, the
 PBOM, the CycloneDX SBOM and the raw SARIF (`upload-artifacts: true`). The
 SARIF is redundant with Code Scanning; the PBOM and SBOM are kept as
