@@ -11,6 +11,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  plumber:
+    uses: ./.github/workflows/plumber.yml
+    permissions:
+      contents: read
+      security-events: write
+      id-token: write
+
   quality:
     name: Code quality
     runs-on: ubuntu-latest
@@ -110,8 +117,8 @@ jobs:
           platforms: linux/arm64
           load: true
           tags: local/bunkerweb-mcp:arm64
-          cache-from: type=gha,scope=bunkerweb-mcp-arm64
-          cache-to: type=gha,mode=max,scope=bunkerweb-mcp-arm64
+          cache-from: type=gha,scope=bunkerweb-mcp-arm64-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=bunkerweb-mcp-arm64-${{ github.ref_name }}
       - name: Start container
         run: |
           docker run --detach --name bunkerweb-mcp-arm64 --platform linux/arm64 \
@@ -169,7 +176,7 @@ jobs:
 
   docker:
     name: Container (AMD64 and publish)
-    needs: [tests, codeql, container-arm64]
+    needs: [plumber, tests, codeql, container-arm64]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -200,8 +207,8 @@ jobs:
           load: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=bunkerweb-mcp-amd64
-          cache-to: type=gha,mode=max,scope=bunkerweb-mcp-amd64
+          cache-from: type=gha,scope=bunkerweb-mcp-amd64-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=bunkerweb-mcp-amd64-${{ github.ref_name }}
       - name: Start container
         run: |
           docker run --detach --name bunkerweb-mcp-amd64 --platform linux/amd64 \

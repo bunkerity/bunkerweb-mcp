@@ -1,5 +1,7 @@
 # BunkerWeb MCP Server (Python)
 
+[![Plumber CI/CD security score](https://score.getplumber.io/github.com/bunkerity/bunkerweb-mcp.svg)](https://score.getplumber.io/github.com/bunkerity/bunkerweb-mcp)
+
 A production-ready MCP server that exposes BunkerWeb's internal API to large language models via a constrained tool interface. The server provides both HTTP (for testing) and WebSocket (for MCP clients) JSON-RPC endpoints, strict input validation, and a resilient async client with retries.
 
 [BunkerWeb website](https://www.bunkerweb.io) · [Documentation](https://docs.bunkerweb.io)

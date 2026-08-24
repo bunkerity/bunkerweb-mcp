@@ -1,0 +1,32 @@
+name: Plumber CI/CD security scan
+
+on:
+  schedule:
+    - cron: "30 9 * * 1"
+  workflow_call:
+
+jobs:
+  plumber:
+    name: Analyze GitHub Actions workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+      id-token: write # OIDC identity required by score-push
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Run Plumber
+        uses: getplumber/plumber@031bc86d1e5f661626e2000f4f8779912d608d5f # v0.4.39
+        with:
+          verify-attestation: true
+          config-file: .github/plumber/plumber.yaml
+          min-score: B
+          soft-fail: false
+          upload-sarif: true
+          score-push: true
+          upload-artifacts: true

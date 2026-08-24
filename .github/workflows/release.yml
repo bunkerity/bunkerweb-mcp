@@ -1,12 +1,22 @@
 name: Release
 
+permissions: read-all
+
 on:
   push:
     tags:
       - "v*.*.*"
 
 jobs:
+  plumber:
+    uses: ./.github/workflows/plumber.yml
+    permissions:
+      contents: read
+      security-events: write
+      id-token: write
+
   release:
+    needs: plumber
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -14,6 +24,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Get version
         id: version
