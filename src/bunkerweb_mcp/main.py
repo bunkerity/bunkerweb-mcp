@@ -110,14 +110,14 @@ def create_app() -> FastAPI:
             finally:
                 await client.close()
 
-    app = FastAPI(title="BunkerWeb MCP Server", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="BunkerWeb MCP Server", version="0.3.0", lifespan=lifespan)
     app.mount("/mcp", mcp_app)
     app.state.fastmcp = fastmcp_server
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
     # Initialize metrics
-    initialize_metrics(version="0.1.0")
+    initialize_metrics(version="0.3.0")
 
     # Initialize tracing
     setup_tracing(app, service_name="mcp-bunkerweb")

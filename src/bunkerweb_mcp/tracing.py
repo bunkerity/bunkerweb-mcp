@@ -47,7 +47,7 @@ def setup_tracing(app: FastAPI, service_name: str = "mcp-bunkerweb") -> None:
     resource = Resource.create(
         {
             "service.name": service_name,
-            "service.version": "0.1.0",
+            "service.version": "0.3.0",
         }
     )
 

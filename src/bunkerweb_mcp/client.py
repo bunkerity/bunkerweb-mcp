@@ -62,7 +62,7 @@ class BunkerWebClient:
         self._settings = settings or get_settings()
         headers = {
             "Accept": "application/json",
-            "User-Agent": "mcp-bunkerweb/0.1.0",
+            "User-Agent": "mcp-bunkerweb/0.3.0",
         }
         # Use secure methods to get secret values
         api_token = self._settings.get_api_token()

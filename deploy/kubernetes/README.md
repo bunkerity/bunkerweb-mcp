@@ -295,7 +295,7 @@ kubectl get pod -n bunkerweb -l app=mcp-bunkerweb -o jsonpath='{.items[0].metada
 ```bash
 # Update image tag in deployment.yaml
 kubectl set image deployment/mcp-bunkerweb \
-  mcp-bunkerweb=docker.io/bunkerity/bunkerweb-mcp:v0.2.0 \
+  mcp-bunkerweb=docker.io/bunkerity/bunkerweb-mcp:0.3.0 \
   -n bunkerweb
 
 # Watch rollout
