@@ -333,8 +333,10 @@ class Tools:
                 return await handler(params)
             except BunkerWebError as exc:
                 raise ToolExecutionError(str(exc)) from exc
+            except (ToolValidationError, ToolExecutionError):
+                raise
             except Exception as exc:  # noqa: BLE001 - ensure consistent tool errors
-                raise ToolExecutionError(str(exc)) from exc
+                raise ToolExecutionError("Unexpected tool execution error") from exc
 
         return executor
 

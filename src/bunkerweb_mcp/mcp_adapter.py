@@ -7,14 +7,15 @@ import json
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from mcp.server.fastmcp import FastMCP
-from mcp.server.fastmcp.prompts.base import Message, Prompt
-from mcp.server.fastmcp.resources import FunctionResource
-from mcp.server.transport_security import TransportSecuritySettings
-from pydantic import AnyUrl, BaseModel
+from mcp.server import MCPServer
+from mcp.server.mcpserver.exceptions import ResourceError, ToolError
+from mcp.server.mcpserver.prompts.base import Message, Prompt
+from mcp.server.mcpserver.resources import FunctionResource
+from pydantic import BaseModel
 from pydantic.fields import PydanticUndefined  # type: ignore[attr-defined]
 
 from .config import Settings
+from .exceptions import BunkerWebError, ToolExecutionError, ToolValidationError
 from .tools import Tools
 
 ToolHandler = Callable[[BaseModel], Awaitable[dict[str, Any]]]
@@ -27,11 +28,14 @@ def _build_tool_callable(
     description: str,
     handler: ToolHandler,
 ) -> Callable[..., Awaitable[dict[str, Any]]]:
-    """Return a FastMCP-compatible callable wrapping a legacy tool handler."""
+    """Return a MCPServer-compatible callable wrapping a legacy tool handler."""
 
     async def tool_callable(**raw_kwargs: Any) -> dict[str, Any]:
         params = params_model.model_validate(raw_kwargs)
-        return await handler(params)
+        try:
+            return await handler(params)
+        except (BunkerWebError, ToolValidationError, ToolExecutionError) as exc:
+            raise ToolError(str(exc)) from exc
 
     parameters: list[inspect.Parameter] = []
     for field_name, field_info in params_model.model_fields.items():
@@ -47,7 +51,7 @@ def _build_tool_callable(
 
     tool_callable.__name__ = f"{name}_tool"
     tool_callable.__doc__ = description
-    # Synthesize an annotated signature so FastMCP can emit accurate JSON schema.
+    # Synthesize an annotated signature so MCPServer can emit accurate JSON schema.
     tool_callable.__signature__ = inspect.Signature(parameters, return_annotation=dict[str, Any])  # type: ignore[attr-defined]
     return tool_callable
 
@@ -61,30 +65,15 @@ def _build_prompt_callable(name: str, prompt_text: str) -> Callable[[], Awaitabl
     return prompt_callable
 
 
-def create_fastmcp_server(settings: Settings, tools: Tools) -> FastMCP:
-    """Instantiate and populate a FastMCP server instance."""
+def create_fastmcp_server(settings: Settings, tools: Tools) -> MCPServer:
+    """Instantiate and populate a MCPServer server instance."""
 
-    # Configure transport security from settings
-    # Parse comma-separated lists of allowed hosts and origins
-    allowed_hosts = [h.strip() for h in settings.mcp_allowed_hosts.split(",") if h.strip()]
-    allowed_origins = [o.strip() for o in settings.mcp_allowed_origins.split(",") if o.strip()]
-
-    transport_security = TransportSecuritySettings(
-        enable_dns_rebinding_protection=settings.mcp_enable_dns_rebinding_protection,
-        allowed_hosts=allowed_hosts,
-        allowed_origins=allowed_origins,
-    )
-
-    server = FastMCP(
+    server = MCPServer(
         name="BunkerWeb MCP Server",
         instructions=(
             "Manage BunkerWeb resources through the official MCP server. "
             f"Target API base: {settings.bunkerweb_base_url}."
         ),
-        json_response=True,
-        stateless_http=True,
-        streamable_http_path="/",
-        transport_security=transport_security,
     )
 
     # Register all tools from the tools registry
@@ -115,7 +104,7 @@ def create_fastmcp_server(settings: Settings, tools: Tools) -> FastMCP:
     return server
 
 
-def _register_resources(server: FastMCP, tools: Tools) -> None:
+def _register_resources(server: MCPServer, tools: Tools) -> None:
     """Register MCP resources that expose BunkerWeb data."""
 
     # Resource: Global configuration
@@ -123,7 +112,7 @@ def _register_resources(server: FastMCP, tools: Tools) -> None:
         """Fetch the current global BunkerWeb configuration."""
         tool = tools.get_tool("global_config_read")
         if tool is None:
-            return json.dumps({"error": "global_config_read tool not available"})
+            raise ResourceError("global_config_read tool not available")
         try:
             result = await tool({"full": True, "methods": False})
 
@@ -144,12 +133,12 @@ def _register_resources(server: FastMCP, tools: Tools) -> None:
                 )
 
             return json.dumps(result, indent=2)
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
+        except (ToolValidationError, ToolExecutionError) as exc:
+            raise ResourceError(str(exc)) from exc
 
     server.add_resource(
         FunctionResource(
-            uri=AnyUrl("config://global"),
+            uri="config://global",
             name="Global Configuration",
             description="Current BunkerWeb global configuration with all settings",
             fn=get_global_config,
@@ -162,16 +151,16 @@ def _register_resources(server: FastMCP, tools: Tools) -> None:
         """Fetch scheduler jobs with their execution history."""
         tool = tools.get_tool("jobs_list")
         if tool is None:
-            return json.dumps({"error": "jobs_list tool not available"})
+            raise ResourceError("jobs_list tool not available")
         try:
             result = await tool({})
             return json.dumps(result, indent=2)
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
+        except (ToolValidationError, ToolExecutionError) as exc:
+            raise ResourceError(str(exc)) from exc
 
     server.add_resource(
         FunctionResource(
-            uri=AnyUrl("logs://jobs"),
+            uri="logs://jobs",
             name="Job Execution History",
             description="Scheduler jobs with their execution history and status",
             fn=get_jobs_history,
@@ -184,16 +173,16 @@ def _register_resources(server: FastMCP, tools: Tools) -> None:
         """Fetch currently active IP bans."""
         tool = tools.get_tool("list_bans")
         if tool is None:
-            return json.dumps({"error": "list_bans tool not available"})
+            raise ResourceError("list_bans tool not available")
         try:
             result = await tool({})
             return json.dumps(result, indent=2)
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
+        except (ToolValidationError, ToolExecutionError) as exc:
+            raise ResourceError(str(exc)) from exc
 
     server.add_resource(
         FunctionResource(
-            uri=AnyUrl("bans://active"),
+            uri="bans://active",
             name="Active IP Bans",
             description="List of currently active IP bans with expiry and reason",
             fn=get_active_bans,
@@ -206,16 +195,16 @@ def _register_resources(server: FastMCP, tools: Tools) -> None:
         """Fetch status of all BunkerWeb instances."""
         tool = tools.get_tool("list_instances")
         if tool is None:
-            return json.dumps({"error": "list_instances tool not available"})
+            raise ResourceError("list_instances tool not available")
         try:
             result = await tool({})
             return json.dumps(result, indent=2)
-        except Exception as exc:
-            return json.dumps({"error": str(exc)})
+        except (ToolValidationError, ToolExecutionError) as exc:
+            raise ResourceError(str(exc)) from exc
 
     server.add_resource(
         FunctionResource(
-            uri=AnyUrl("instances://status"),
+            uri="instances://status",
             name="Instance Status",
             description="Current status and health of all registered BunkerWeb instances",
             fn=get_instances_status,
@@ -224,7 +213,7 @@ def _register_resources(server: FastMCP, tools: Tools) -> None:
     )
 
 
-def _register_search_tool(server: FastMCP) -> None:
+def _register_search_tool(server: MCPServer) -> None:
     """Register the semantic search tool for BunkerWeb documentation."""
     import logging
 
@@ -318,13 +307,9 @@ def _register_search_tool(server: FastMCP) -> None:
                 "results": formatted_results,
             }
 
-        except Exception as exc:
+        except Exception:
             logger.exception("Search API error")
-            return {
-                "status": "error",
-                "error": str(exc),
-                "query": query,
-            }
+            raise
 
     # Register the tool
     server.add_tool(

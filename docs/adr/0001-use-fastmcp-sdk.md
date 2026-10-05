@@ -140,3 +140,28 @@ If FastMCP SDK presents major limitations in the future, migration to a custom i
 - Business logic does not directly depend on the SDK
 
 This decision can be reviewed in ADR-XXXX if necessary.
+
+### SDK 2.1.1 migration (2026-09-09)
+
+The official SDK now calls its high-level server `MCPServer`. The adapter uses
+`mcp.server.MCPServer` and the prompt/resource modules under `mcp.server.mcpserver`.
+HTTP settings belong to `streamable_http_app`: JSON responses, stateless sessions,
+`streamable_http_path="/"`, and the existing `TransportSecuritySettings` policy.
+The FastAPI application retains its `/mcp` mount, configured log-access token
+wrapper, and session-manager lifespan; the CLI continues to run stdio.
+
+Registry tools retain text JSON results with `structured_output=False`; search
+retains its structured result. Resource URIs are strings. Intentional tool and
+resource failures use SDK exceptions so their messages remain visible; unexpected
+exception details are withheld from protocol responses. Unknown log sources retain
+their intentional error message. The shared registry also redacts unexpected errors
+before exposing them through resources or legacy endpoints.
+
+The `/tools` and `/rpc` search integration retains the existing SDK tool-manager
+access. Successful payloads remain unchanged. Unexpected search exceptions now
+produce an MCP tool error (or an HTTP 500 through `/rpc`) instead of a successful
+response containing the exception text. `tests/test_mcp_protocol.py` exercises the
+installed SDK through HTTP and stdio, including authentication, host/origin checks,
+prompts, resources, wire result shapes, and shutdown.
+
+Reference: [SDK 2.1.1 migration guide](https://github.com/modelcontextprotocol/python-sdk/blob/v2.1.1/docs/migration.md).

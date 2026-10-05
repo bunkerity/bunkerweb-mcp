@@ -14,6 +14,7 @@ from typing import Any
 import httpx
 from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import JSONResponse, Response
+from mcp.server.transport_security import TransportSecuritySettings
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -60,7 +61,18 @@ def create_app() -> FastAPI:
     ws_rate_limiter = WebSocketRateLimiter(max_messages=500, window_seconds=60)
 
     # Create the streamable HTTP app first to initialize the session manager
-    mcp_app: ASGIApp = fastmcp_server.streamable_http_app()
+    mcp_app: ASGIApp = fastmcp_server.streamable_http_app(
+        streamable_http_path="/",
+        json_response=True,
+        stateless_http=True,
+        transport_security=TransportSecuritySettings(
+            enable_dns_rebinding_protection=settings.mcp_enable_dns_rebinding_protection,
+            allowed_hosts=[h.strip() for h in settings.mcp_allowed_hosts.split(",") if h.strip()],
+            allowed_origins=[
+                o.strip() for o in settings.mcp_allowed_origins.split(",") if o.strip()
+            ],
+        ),
+    )
     if logs_path is not None:
         protected_app = mcp_app
 

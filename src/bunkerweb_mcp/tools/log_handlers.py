@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from ..exceptions import ToolExecutionError
 from .params import EmptyParams, LogsReadParams
 
 MAX_SCAN_BYTES = 1024 * 1024
@@ -80,14 +81,14 @@ class LogReader:
     def _read_logs(self, params: LogsReadParams) -> dict[str, Any]:
         entry = self._inventory().get(params.source)
         if entry is None:
-            raise ValueError(f"Unknown log source: {params.source}")
+            raise ToolExecutionError(f"Unknown log source: {params.source}")
         path, _ = entry
 
         descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
         with os.fdopen(descriptor, "rb") as log_file:
             file_stat = os.fstat(log_file.fileno())
             if not stat.S_ISREG(file_stat.st_mode):
-                raise ValueError(f"Log source is not a regular file: {params.source}")
+                raise ToolExecutionError(f"Log source is not a regular file: {params.source}")
 
             size = file_stat.st_size
             cursor_reset = params.cursor is not None and params.cursor > size

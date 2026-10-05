@@ -140,7 +140,7 @@ def test_create_fastmcp_server_initializes():
 
     tools.tool_handlers["ping"] = test_handler
 
-    with patch("bunkerweb_mcp.mcp_adapter.FastMCP") as mock_fastmcp:
+    with patch("bunkerweb_mcp.mcp_adapter.MCPServer") as mock_fastmcp:
         mock_server = MagicMock()
         mock_fastmcp.return_value = mock_server
 
@@ -152,9 +152,9 @@ def test_create_fastmcp_server_initializes():
 
         assert call_kwargs["name"] == "BunkerWeb MCP Server"
         assert "http://test-server:8888" in call_kwargs["instructions"]
-        assert call_kwargs["json_response"] is True
-        assert call_kwargs["stateless_http"] is True
-        assert call_kwargs["streamable_http_path"] == "/"
+        assert "json_response" not in call_kwargs
+        assert "stateless_http" not in call_kwargs
+        assert "streamable_http_path" not in call_kwargs
 
 
 def test_create_fastmcp_server_registers_tools():
@@ -172,7 +172,7 @@ def test_create_fastmcp_server_registers_tools():
     tools.tool_handlers["ping"] = ping_handler
     tools.tool_handlers["health"] = health_handler
 
-    with patch("bunkerweb_mcp.mcp_adapter.FastMCP") as mock_fastmcp:
+    with patch("bunkerweb_mcp.mcp_adapter.MCPServer") as mock_fastmcp:
         mock_server = MagicMock()
         mock_fastmcp.return_value = mock_server
 
@@ -193,7 +193,7 @@ def test_create_fastmcp_server_registers_prompts():
 
     tools.tool_handlers["test_tool"] = test_handler
 
-    with patch("bunkerweb_mcp.mcp_adapter.FastMCP") as mock_fastmcp:
+    with patch("bunkerweb_mcp.mcp_adapter.MCPServer") as mock_fastmcp:
         mock_server = MagicMock()
         mock_fastmcp.return_value = mock_server
 
@@ -209,7 +209,7 @@ async def test_resources_are_registered():
     settings = Settings(bunkerweb_base_url="http://test:8888")
     tools = StubTools()
 
-    with patch("bunkerweb_mcp.mcp_adapter.FastMCP") as mock_fastmcp:
+    with patch("bunkerweb_mcp.mcp_adapter.MCPServer") as mock_fastmcp:
         mock_server = MagicMock()
         mock_fastmcp.return_value = mock_server
 

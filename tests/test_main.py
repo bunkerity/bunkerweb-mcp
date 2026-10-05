@@ -25,6 +25,9 @@ class StubSettings(SimpleNamespace):
     retry_backoff_max: float = 0.1
     rate_limit_enabled: bool = False
     bunkerweb_logs_path: Path | None = None
+    mcp_enable_dns_rebinding_protection: bool = True
+    mcp_allowed_hosts: str = "testserver"
+    mcp_allowed_origins: str = "http://testserver"
 
     def get_websocket_token(self) -> str | None:
         """Get WebSocket token value for testing."""
@@ -101,7 +104,7 @@ class StubClient:
 class StubFastMCP:
     """Stub FastMCP server for testing."""
 
-    def streamable_http_app(self):
+    def streamable_http_app(self, **kwargs):
         """Return a stub ASGI app."""
         from fastapi import FastAPI
 
