@@ -1,5 +1,6 @@
 import json
 from collections.abc import Awaitable, Callable
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
@@ -23,6 +24,7 @@ class StubSettings(SimpleNamespace):
     retry_backoff_initial: float = 0.1
     retry_backoff_max: float = 0.1
     rate_limit_enabled: bool = False
+    bunkerweb_logs_path: Path | None = None
 
     def get_websocket_token(self) -> str | None:
         """Get WebSocket token value for testing."""
@@ -120,16 +122,22 @@ class StubPromptCatalog:
         return self._prompts
 
 
-@pytest.fixture
-def app_fixture(monkeypatch: pytest.MonkeyPatch):
+def _build_stubbed_app(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    logs_path: Path | None = None,
+    token: str | None = "secret",
+):
     tools = StubTools()
     settings = StubSettings()
+    settings.bunkerweb_logs_path = logs_path
+    settings.websocket_token = token
 
     monkeypatch.setattr("bunkerweb_mcp.main.get_settings", lambda: settings)
     monkeypatch.setattr("bunkerweb_mcp.main.BunkerWebClient", lambda settings: StubClient(settings))
     monkeypatch.setattr("bunkerweb_mcp.main.load_catalog", lambda settings: StubPromptCatalog())
 
-    def tools_factory(client: StubClient, prompt_catalog=None) -> StubTools:
+    def tools_factory(client: StubClient, prompt_catalog=None, logs_path=None) -> StubTools:
         tools.client = client
         if prompt_catalog is not None:
             tools.prompts = prompt_catalog.descriptors()
@@ -145,6 +153,11 @@ def app_fixture(monkeypatch: pytest.MonkeyPatch):
 
     app = create_app()
     return app, tools, settings
+
+
+@pytest.fixture
+def app_fixture(monkeypatch: pytest.MonkeyPatch):
+    return _build_stubbed_app(monkeypatch)
 
 
 @pytest_asyncio.fixture
@@ -282,6 +295,26 @@ async def test_rpc_token_mismatch(async_client) -> None:
 
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid MCP token"
+
+
+def test_logs_require_token_for_http(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    with pytest.raises(RuntimeError, match="BUNKERWEB_WEBSOCKET_TOKEN is required"):
+        _build_stubbed_app(monkeypatch, logs_path=tmp_path, token=None)
+
+
+@pytest.mark.asyncio
+async def test_logs_protect_streamable_http(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    app, _, _ = _build_stubbed_app(monkeypatch, logs_path=tmp_path)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        denied = await client.get("/mcp/")
+        allowed = await client.get("/mcp/", headers={"x-mcp-token": "secret"})
+
+    assert denied.status_code == 401
+    assert denied.json()["detail"] == "Invalid MCP token"
+    assert allowed.status_code == 404
 
 
 @pytest.mark.asyncio

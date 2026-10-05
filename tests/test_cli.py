@@ -179,6 +179,7 @@ async def test_run_stdio_passes_settings_to_components():
             log_level="DEBUG",
             bunkerweb_base_url="http://custom:7777",
             request_timeout_seconds=60.0,
+            bunkerweb_logs_path=None,
         )
         mock_settings.return_value = test_settings
 
@@ -197,5 +198,9 @@ async def test_run_stdio_passes_settings_to_components():
         # Verify settings object was passed to components
         mock_client_class.assert_called_once_with(settings=test_settings)
         mock_load_catalog.assert_called_once_with(test_settings)
-        mock_tools_class.assert_called_once_with(mock_client, prompt_catalog=mock_catalog)
+        mock_tools_class.assert_called_once_with(
+            mock_client,
+            prompt_catalog=mock_catalog,
+            logs_path=None,
+        )
         mock_create_server.assert_called_once_with(test_settings, mock_tools)

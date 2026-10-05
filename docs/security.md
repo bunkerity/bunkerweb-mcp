@@ -174,6 +174,8 @@ The MCP server logs all security validations. Look for:
 - ✅ Only list hosts you control in `MCP_ALLOWED_HOSTS`
 - ✅ Use HTTPS in production (configure reverse proxy)
 - ✅ Set `BUNKERWEB_API_TOKEN` for API authentication
+- ✅ Set `BUNKERWEB_WEBSOCKET_TOKEN` when enabling `BUNKERWEB_LOGS_PATH`
+- ✅ Mount BunkerWeb logs read-only and treat their contents as untrusted input
 - ✅ Use firewall rules to restrict access to MCP port
 - ✅ Regularly audit `MCP_ALLOWED_HOSTS` list
 - ✅ Monitor logs for rejected requests (potential attacks)

@@ -24,7 +24,11 @@ async def run_stdio() -> None:
 
     client = BunkerWebClient(settings=settings)
     prompt_catalog = load_catalog(settings)
-    tools = Tools(client, prompt_catalog=prompt_catalog)
+    tools = Tools(
+        client,
+        prompt_catalog=prompt_catalog,
+        logs_path=settings.bunkerweb_logs_path,
+    )
     server = create_fastmcp_server(settings, tools)
 
     try:

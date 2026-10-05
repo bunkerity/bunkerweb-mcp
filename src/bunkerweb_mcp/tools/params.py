@@ -400,3 +400,19 @@ class JobDescriptor(BaseModel):
 
 class JobsRunParams(_BaseToolParams):
     jobs: list[JobDescriptor] = Field(..., min_length=1, description="Jobs to execute")
+
+
+class LogsReadParams(_BaseToolParams):
+    source: str = Field(..., min_length=1, max_length=255, description="Source from logs_list")
+    query: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=1024,
+        description="Optional case-insensitive literal text filter",
+    )
+    limit: int = Field(default=100, ge=1, le=500, description="Maximum matching lines")
+    cursor: int | None = Field(
+        default=None,
+        ge=0,
+        description="Byte cursor returned by a previous logs_read call",
+    )

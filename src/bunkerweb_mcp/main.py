@@ -8,6 +8,7 @@ import logging
 import time
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from secrets import compare_digest
 from typing import Any
 
 import httpx
@@ -17,6 +18,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from .client import BunkerWebClient
 from .config import get_settings
@@ -43,16 +45,38 @@ limiter = Limiter(key_func=get_remote_address)
 def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging(settings.log_level)
+    logs_path = settings.bunkerweb_logs_path
+    mcp_token = settings.get_websocket_token()
+    if logs_path is not None and not mcp_token:
+        raise RuntimeError(
+            "BUNKERWEB_WEBSOCKET_TOKEN is required when BUNKERWEB_LOGS_PATH is configured"
+        )
     client = BunkerWebClient(settings=settings)
     prompt_catalog = load_catalog(settings)
-    tools = Tools(client, prompt_catalog=prompt_catalog)
+    tools = Tools(client, prompt_catalog=prompt_catalog, logs_path=logs_path)
     fastmcp_server = create_fastmcp_server(settings, tools)
 
     # Initialize WebSocket rate limiter (500 messages per minute)
     ws_rate_limiter = WebSocketRateLimiter(max_messages=500, window_seconds=60)
 
     # Create the streamable HTTP app first to initialize the session manager
-    mcp_app = fastmcp_server.streamable_http_app()
+    mcp_app: ASGIApp = fastmcp_server.streamable_http_app()
+    if logs_path is not None:
+        protected_app = mcp_app
+
+        async def authenticated_mcp(scope: Scope, receive: Receive, send: Send) -> None:
+            if scope["type"] == "http":
+                provided = dict(scope.get("headers", [])).get(b"x-mcp-token", b"").decode()
+                if not mcp_token or not compare_digest(provided, mcp_token):
+                    response = JSONResponse(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        content={"detail": "Invalid MCP token"},
+                    )
+                    await response(scope, receive, send)
+                    return
+            await protected_app(scope, receive, send)
+
+        mcp_app = authenticated_mcp
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> Any:
@@ -82,7 +106,7 @@ def create_app() -> FastAPI:
         return settings.get_websocket_token()
 
     def _check_token(provided: str | None, expected: str | None) -> None:
-        if expected and provided != expected:
+        if expected and (provided is None or not compare_digest(provided, expected)):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid MCP token"
             )

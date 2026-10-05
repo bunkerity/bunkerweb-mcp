@@ -9,10 +9,14 @@ services:
       - "8080:8080"
     environment:
       - BUNKERWEB_BASE_URL=${BUNKERWEB_BASE_URL:-http://localhost:8888}
+      # To enable log tools, also set BUNKERWEB_LOGS_PATH=/var/log/bunkerweb,
+      # configure BUNKERWEB_WEBSOCKET_TOKEN, and add a read-only log mount below.
       # Search service connection (optional)
       - SEARCH_MODE=${SEARCH_MODE:-disabled}
       - SEARCH_API_URL=${SEARCH_API_URL:-https://search-url.example.com}
       - SEARCH_TIMEOUT=${SEARCH_TIMEOUT:-10.0}
+    # volumes:
+    #   - /var/log/bunkerweb:/var/log/bunkerweb:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]

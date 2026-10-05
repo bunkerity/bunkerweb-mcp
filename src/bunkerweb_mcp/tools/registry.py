@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Iterable
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from ..exceptions import BunkerWebError, ToolExecutionError, ToolValidationError
@@ -13,6 +14,7 @@ from . import (
     core_handlers,
     instance_handlers,
     job_handlers,
+    log_handlers,
     plugin_handlers,
     service_handlers,
 )
@@ -42,6 +44,7 @@ from .params import (
     InstanceUpdateParams,
     JobsRunParams,
     ListServicesParams,
+    LogsReadParams,
     PluginDeleteParams,
     PluginListParams,
     PluginUploadParams,
@@ -102,6 +105,8 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     "cache_delete_file": "Delete a single cache file.",
     "jobs_list": "List scheduler jobs and history.",
     "jobs_run": "Trigger one or more scheduler jobs.",
+    "logs_list": "List readable BunkerWeb runtime log sources.",
+    "logs_read": "Read bounded recent lines from a BunkerWeb runtime log.",
 }
 
 
@@ -109,7 +114,10 @@ class Tools:
     """Collection of callable tools wired to the BunkerWeb client."""
 
     def __init__(
-        self, client: BunkerWebClientProtocol, prompt_catalog: PromptCatalog | None = None
+        self,
+        client: BunkerWebClientProtocol,
+        prompt_catalog: PromptCatalog | None = None,
+        logs_path: Path | None = None,
     ) -> None:
         self._client = client
         from ..prompt_catalog import PromptCatalog
@@ -257,6 +265,14 @@ class Tools:
             "jobs_list": (EmptyParams, self._wrap(job_handlers.handle_list_jobs)),
             "jobs_run": (JobsRunParams, self._wrap(job_handlers.handle_run_jobs)),
         }
+        if logs_path is not None:
+            log_reader = log_handlers.LogReader(logs_path)
+            self._registry.update(
+                {
+                    "logs_list": (EmptyParams, log_reader.list_logs),
+                    "logs_read": (LogsReadParams, log_reader.read_logs),
+                }
+            )
 
     def _wrap(
         self, handler: Callable[[BunkerWebClientProtocol, Any], Awaitable[dict[str, Any]]]

@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import cast
 
-from pydantic import AnyHttpUrl, Field, PositiveInt, SecretStr
+from pydantic import AnyHttpUrl, Field, PositiveInt, SecretStr, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -63,6 +63,11 @@ class Settings(BaseSettings):
         default="INFO",
         description="Application log level.",
         alias="BUNKERWEB_LOG_LEVEL",
+    )
+    bunkerweb_logs_path: Path | None = Field(
+        default=None,
+        description="Optional read-only BunkerWeb runtime log directory.",
+        alias="BUNKERWEB_LOGS_PATH",
     )
     prompt_catalog_path: Path | None = Field(
         default=None,
@@ -138,6 +143,12 @@ class Settings(BaseSettings):
         "case_sensitive": False,
         "populate_by_name": True,
     }
+
+    @field_validator("bunkerweb_logs_path", mode="before")
+    @classmethod
+    def empty_logs_path_is_disabled(cls, value: object) -> object:
+        """Keep an empty environment variable from resolving to the current directory."""
+        return None if value == "" else value
 
     def get_api_token(self) -> str | None:
         """Get API token value securely.

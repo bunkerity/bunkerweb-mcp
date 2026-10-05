@@ -73,6 +73,8 @@ services:
       # BUNKERWEB_RETRY_BACKOFF_MAX: "5.0"
       BUNKERWEB_WEBSOCKET_TOKEN: ""
       BUNKERWEB_LOG_LEVEL: INFO
+      # Runtime log tools require a shared read-only log mount and non-empty token:
+      # BUNKERWEB_LOGS_PATH: /var/log/bunkerweb
       MCP_ENABLE_DNS_REBINDING_PROTECTION: "False"
       # MCP_ALLOWED_HOSTS: ""
       # MCP_ALLOWED_ORIGINS: ""
@@ -80,6 +82,8 @@ services:
       SEARCH_MODE: "disabled"
       SEARCH_API_URL: ""
       SEARCH_TIMEOUT: "10.0"
+    # volumes:
+    #   - /var/log/bunkerweb:/var/log/bunkerweb:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
