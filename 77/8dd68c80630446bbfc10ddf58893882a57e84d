@@ -1,0 +1,31 @@
+deploy/kubernetes/README.md
+  s_4512283f0764a5::t_6695435b2f6eb1 298
+src/bunkerweb_mcp/__init__.py
+  s_4512283f0764a5::t_88d940047fed38 7
+src/bunkerweb_mcp/tracing.py
+  s_4512283f0764a5::t_88d940047fed38 50
+src/bunkerweb_mcp/client.py
+  s_4512283f0764a5::t_88d940047fed38 65
+pyproject.toml
+  s_4512283f0764a5::t_88d940047fed38 7
+src/bunkerweb_mcp/main.py
+  s_4512283f0764a5::t_88d940047fed38 113,120
+deploy/kubernetes/deployment.yaml
+  s_4512283f0764a5::t_88d940047fed38 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "778dd68c80630446bbfc10ddf58893882a57e84d",
+  "prompts": {},
+  "sessions": {
+    "s_4512283f0764a5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "222d1166-f3fe-4dd9-9335-d765ba490aa6",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
