@@ -3,6 +3,7 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
+from urllib.parse import quote
 
 import pytest
 import pytest_asyncio
@@ -318,6 +319,51 @@ async def test_logs_protect_streamable_http(
     assert denied.status_code == 401
     assert denied.json()["detail"] == "Invalid MCP token"
     assert allowed.status_code == 404
+
+
+NON_ASCII_TOKENS = [b"\xff", "é".encode(), b"secret\xff"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("raw_token", NON_ASCII_TOKENS)
+async def test_rpc_non_ascii_token_returns_401(async_client, raw_token: bytes) -> None:
+    client, _, settings = async_client
+    settings.websocket_token = "secret"
+
+    response = await client.post(
+        "/rpc",
+        headers=[(b"x-mcp-token", raw_token)],
+        json={"id": "req-1", "tool": "echo", "params": {}},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid MCP token"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("raw_token", NON_ASCII_TOKENS)
+async def test_mcp_non_ascii_token_returns_401(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, raw_token: bytes
+) -> None:
+    app, _, _ = _build_stubbed_app(monkeypatch, logs_path=tmp_path)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        response = await client.get("/mcp/", headers=[(b"x-mcp-token", raw_token)])
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid MCP token"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("token", ["\xff", "é", "secret\xff"])
+async def test_websocket_non_ascii_token_rejected(app_fixture, token: str) -> None:
+    app, _, settings = app_fixture
+    settings.websocket_token = "secret"
+
+    async with WebSocketSession(app, f"/ws?token={quote(token)}") as ws:
+        with pytest.raises(WebSocketDisconnect) as exc:
+            await ws.receive_text()
+        assert exc.value.code == 1008
 
 
 @pytest.mark.asyncio

@@ -8,7 +8,7 @@ import logging
 import time
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from secrets import compare_digest
+from secrets import compare_digest as _compare_digest
 from typing import Any
 
 import httpx
@@ -41,6 +41,17 @@ LOGGER = logging.getLogger(__name__)
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
+
+
+def _token_matches(provided: str | bytes, expected: str) -> bool:
+    """Constant-time token comparison that never raises on non-ASCII input.
+
+    ``compare_digest`` raises ``TypeError`` on non-ASCII ``str`` operands, so both
+    sides are compared as bytes.
+    """
+    if isinstance(provided, str):
+        provided = provided.encode("utf-8", "surrogatepass")
+    return _compare_digest(provided, expected.encode("utf-8", "surrogatepass"))
 
 
 def create_app() -> FastAPI:
@@ -78,8 +89,8 @@ def create_app() -> FastAPI:
 
         async def authenticated_mcp(scope: Scope, receive: Receive, send: Send) -> None:
             if scope["type"] == "http":
-                provided = dict(scope.get("headers", [])).get(b"x-mcp-token", b"").decode()
-                if not mcp_token or not compare_digest(provided, mcp_token):
+                provided = dict(scope.get("headers", [])).get(b"x-mcp-token", b"")
+                if not mcp_token or not _token_matches(provided, mcp_token):
                     response = JSONResponse(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         content={"detail": "Invalid MCP token"},
@@ -117,8 +128,8 @@ def create_app() -> FastAPI:
     async def get_mcp_token() -> str | None:
         return settings.get_websocket_token()
 
-    def _check_token(provided: str | None, expected: str | None) -> None:
-        if expected and (provided is None or not compare_digest(provided, expected)):
+    def _check_token(provided: str | bytes | None, expected: str | None) -> None:
+        if expected and (provided is None or not _token_matches(provided, expected)):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid MCP token"
             )
@@ -174,8 +185,9 @@ def create_app() -> FastAPI:
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON payload"
             ) from exc
 
+        # Starlette decodes header values as latin-1; re-encode to recover the raw bytes.
         provided_token = request.headers.get("x-mcp-token")
-        _check_token(provided_token, expected_token)
+        _check_token(provided_token.encode("latin-1") if provided_token else None, expected_token)
 
         tool_name = payload.get("tool")
         params = payload.get("params", {})
@@ -254,7 +266,7 @@ def create_app() -> FastAPI:
         connection_id = f"{ws.client.host}:{ws.client.port}" if ws.client else "unknown"
 
         try:
-            if expected_token and token != expected_token:
+            if expected_token and (token is None or not _token_matches(token, expected_token)):
                 await ws.close(code=status.WS_1008_POLICY_VIOLATION)
                 return
             while True:
