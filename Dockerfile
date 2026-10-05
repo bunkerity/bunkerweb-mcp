@@ -3,7 +3,7 @@
 # Lightweight MCP server image (no ML dependencies)
 # Search is handled by a separate bunkerweb-search-service
 
-FROM python:3.14-slim@sha256:cea0e6040540fb2b965b6e7fb5ffa00871e632eef63719f0ea54bca189ce14a6 AS builder
+FROM python:3.14-slim@sha256:c3e521df8b2b498a7a682e7e18676771cb80c6b75b8699af886b2d554ce40151 AS builder
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -20,7 +20,7 @@ RUN pip install --upgrade pip && \
     pip wheel --wheel-dir /wheels .
 
 # Runtime stage
-FROM python:3.14-slim@sha256:cea0e6040540fb2b965b6e7fb5ffa00871e632eef63719f0ea54bca189ce14a6 AS runtime
+FROM python:3.14-slim@sha256:c3e521df8b2b498a7a682e7e18676771cb80c6b75b8699af886b2d554ce40151 AS runtime
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -30,7 +30,7 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
 WORKDIR /app
 
 # Fix CVEs
-RUN apt-get update && apt-get install -y --no-install-recommends bsdutils libblkid1 liblastlog2-2 libmount1 libsmartcols1 libuuid1 login mount util-linux && rm -rf /var/lib/apt/lists/* # util-linux 2.41-5 -> 2.41.5-0+deb13u1, still shipped vulnerable by the base image: CVE-2026-53612 CVE-2026-53613 CVE-2026-53614 CVE-2026-53615
+RUN apt-get update && apt-get install -y --no-install-recommends libpcre2-8-0 && rm -rf /var/lib/apt/lists/* # pcre2 10.46-1~deb13u2 -> 10.46-1~deb13u3, still shipped vulnerable by the base image: CVE-2026-103111
 
 # Install Python packages from builder
 COPY --from=builder /wheels /wheels
