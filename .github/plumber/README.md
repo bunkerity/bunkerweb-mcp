@@ -44,6 +44,11 @@ workflow also runs weekly. It is gated at `min-score: B` with
 `soft-fail: false`, so scores of C, D or E fail the run. Results land in the
 Code Scanning tab.
 
+On pull requests the scan still runs and gates the PR, but `upload-sarif` and
+`score-push` are off: a PR run sends nothing to Code Scanning and publishes no
+score. Run-scoped workflow artifacts are still uploaded (the Plumber reports and
+the Docker build records); they stay attached to the run.
+
 Every input is set explicitly in `plumber.yml`, including those that match the
 action's own defaults, so that an auditor reads the effective configuration
 from the workflow alone and never has to diff it against `action.yml` at some

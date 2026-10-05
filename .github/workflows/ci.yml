@@ -5,6 +5,8 @@ permissions: read-all
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -19,6 +21,8 @@ jobs:
       id-token: write
 
   quality:
+    permissions:
+      contents: read
     name: Code quality
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -45,6 +49,8 @@ jobs:
         run: bandit -r src/ -ll
 
   tests:
+    permissions:
+      contents: read
     name: Tests (Python ${{ matrix.python-version }})
     needs: quality
     runs-on: ubuntu-latest
@@ -71,46 +77,49 @@ jobs:
 
   codeql:
     name: CodeQL
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
     permissions:
       actions: read
       contents: read
       security-events: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
         with:
           languages: python
       - name: Analyze
-        uses: github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
+        with:
+          upload: ${{ github.event_name == 'pull_request' && 'never' || 'always' }}
+          upload-database: ${{ github.event_name != 'pull_request' }}
 
   container-arm64:
     name: Container (ARM64)
-    needs: [tests, codeql]
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
     permissions:
       actions: read
       contents: read
       security-events: write
+    needs: [tests, codeql]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: arm64
       - name: Set up Buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Build image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: Dockerfile
@@ -148,9 +157,9 @@ jobs:
         env:
           TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
       - name: Upload Trivy results
-        if: ${{ always() && hashFiles('trivy-arm64.sarif') != '' }}
+        if: ${{ github.event_name != 'pull_request' && always() && hashFiles('trivy-arm64.sarif') != '' }}
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
         with:
           sarif_file: trivy-arm64.sarif
           category: trivy-container-arm64
@@ -176,20 +185,20 @@ jobs:
 
   docker:
     name: Container (AMD64 and publish)
-    needs: [plumber, tests, codeql, container-arm64]
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
     permissions:
       actions: read
       contents: read
       security-events: write
+    needs: [plumber, tests, codeql, container-arm64]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Set up Buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
@@ -199,7 +208,7 @@ jobs:
             type=sha
             type=raw,value=latest
       - name: Build image
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           file: Dockerfile
@@ -236,9 +245,9 @@ jobs:
         env:
           TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
       - name: Upload Trivy results
-        if: ${{ always() && hashFiles('trivy-amd64.sarif') != '' }}
+        if: ${{ github.event_name != 'pull_request' && always() && hashFiles('trivy-amd64.sarif') != '' }}
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4.38.1
         with:
           sarif_file: trivy-amd64.sarif
           category: trivy-container-amd64
@@ -254,11 +263,13 @@ jobs:
         env:
           TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db
       - name: Log in to Docker Hub
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
       - name: Push image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: docker push --all-tags bunkerity/bunkerweb-mcp
       - name: Show container logs on failure
         if: failure()
