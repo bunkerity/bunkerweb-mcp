@@ -1,5 +1,6 @@
 """Application configuration powered by Pydantic settings."""
 
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import cast
@@ -73,6 +74,16 @@ class Settings(BaseSettings):
         default=None,
         description="Optional filesystem path to the tool prompt catalog (JSON).",
         alias="BUNKERWEB_PROMPT_CATALOG",
+    )
+    redact_secrets: bool = Field(
+        default=False,
+        description="Mask BunkerWeb secrets in tool outputs and refuse writes to sensitive settings.",
+        alias="BUNKERWEB_REDACT_SECRETS",
+    )
+    redact_pattern: str | None = Field(
+        default=None,
+        description="Optional regular expression overriding the sensitive setting name pattern.",
+        alias="BUNKERWEB_REDACT_PATTERN",
     )
 
     # Search Service Settings
@@ -149,6 +160,19 @@ class Settings(BaseSettings):
     def empty_logs_path_is_disabled(cls, value: object) -> object:
         """Keep an empty environment variable from resolving to the current directory."""
         return None if value == "" else value
+
+    @field_validator("redact_pattern", mode="before")
+    @classmethod
+    def compile_redact_pattern(cls, value: object) -> object:
+        """Treat an empty pattern as unset and reject invalid expressions at startup."""
+        if value == "":
+            return None
+        if isinstance(value, str):
+            try:
+                re.compile(value)
+            except re.error as exc:
+                raise ValueError(f"BUNKERWEB_REDACT_PATTERN is not a valid regex: {exc}") from exc
+        return value
 
     def get_api_token(self) -> str | None:
         """Get API token value securely.

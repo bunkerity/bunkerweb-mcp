@@ -13,6 +13,7 @@ from starlette.websockets import WebSocketDisconnect
 
 from bunkerweb_mcp.exceptions import ToolExecutionError, ToolValidationError
 from bunkerweb_mcp.main import create_app
+from bunkerweb_mcp.redaction import RedactionPolicy
 
 
 class StubSettings(SimpleNamespace):
@@ -29,6 +30,8 @@ class StubSettings(SimpleNamespace):
     mcp_enable_dns_rebinding_protection: bool = True
     mcp_allowed_hosts: str = "testserver"
     mcp_allowed_origins: str = "http://testserver"
+    redact_secrets: bool = False
+    redact_pattern: str | None = None
 
     def get_websocket_token(self) -> str | None:
         """Get WebSocket token value for testing."""
@@ -58,6 +61,7 @@ class StubTools:
         self.calls: list[tuple[str, dict[str, Any]]] = []
         self.client: StubClient | None = None
         self.prompts: dict[str, str] = {}
+        self.redaction: RedactionPolicy | None = None
 
     def list_descriptors(self) -> list[dict[str, Any]]:
         return [
@@ -131,18 +135,23 @@ def _build_stubbed_app(
     *,
     logs_path: Path | None = None,
     token: str | None = "secret",
+    redact_secrets: bool = False,
 ):
     tools = StubTools()
     settings = StubSettings()
     settings.bunkerweb_logs_path = logs_path
     settings.websocket_token = token
+    settings.redact_secrets = redact_secrets
 
     monkeypatch.setattr("bunkerweb_mcp.main.get_settings", lambda: settings)
     monkeypatch.setattr("bunkerweb_mcp.main.BunkerWebClient", lambda settings: StubClient(settings))
     monkeypatch.setattr("bunkerweb_mcp.main.load_catalog", lambda settings: StubPromptCatalog())
 
-    def tools_factory(client: StubClient, prompt_catalog=None, logs_path=None) -> StubTools:
+    def tools_factory(
+        client: StubClient, prompt_catalog=None, logs_path=None, redaction=None
+    ) -> StubTools:
         tools.client = client
+        tools.redaction = redaction
         if prompt_catalog is not None:
             tools.prompts = prompt_catalog.descriptors()
         return tools
@@ -162,6 +171,16 @@ def _build_stubbed_app(
 @pytest.fixture
 def app_fixture(monkeypatch: pytest.MonkeyPatch):
     return _build_stubbed_app(monkeypatch)
+
+
+def test_create_app_disables_redaction_by_default(app_fixture) -> None:
+    _, tools, _ = app_fixture
+    assert tools.redaction is None
+
+
+def test_create_app_passes_redaction_policy(monkeypatch: pytest.MonkeyPatch) -> None:
+    _, tools, _ = _build_stubbed_app(monkeypatch, redact_secrets=True)
+    assert isinstance(tools.redaction, RedactionPolicy)
 
 
 @pytest_asyncio.fixture

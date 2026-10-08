@@ -33,6 +33,7 @@ from .metrics import (
 )
 from .prompt_catalog import load_catalog
 from .rate_limiter import WebSocketRateLimiter
+from .redaction import policy_from_settings
 from .tools import Tools
 from .tracing import setup_tracing
 from .utils.logging import configure_logging
@@ -65,7 +66,12 @@ def create_app() -> FastAPI:
         )
     client = BunkerWebClient(settings=settings)
     prompt_catalog = load_catalog(settings)
-    tools = Tools(client, prompt_catalog=prompt_catalog, logs_path=logs_path)
+    tools = Tools(
+        client,
+        prompt_catalog=prompt_catalog,
+        logs_path=logs_path,
+        redaction=policy_from_settings(settings),
+    )
     fastmcp_server = create_fastmcp_server(settings, tools)
 
     # Initialize WebSocket rate limiter (500 messages per minute)
