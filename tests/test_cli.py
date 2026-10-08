@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from bunkerweb_mcp.cli import main, run_stdio
+from bunkerweb_mcp.redaction import RedactionPolicy
 
 
 @pytest.mark.asyncio
@@ -20,7 +21,7 @@ async def test_run_stdio_initializes_components():
     ):
         # Setup mocks
         mock_settings.return_value = MagicMock(
-            log_level="INFO", bunkerweb_base_url="http://localhost:8888"
+            log_level="INFO", bunkerweb_base_url="http://localhost:8888", redact_secrets=False
         )
         mock_client = AsyncMock()
         mock_client_class.return_value = mock_client
@@ -63,7 +64,7 @@ async def test_run_stdio_cleans_up_on_exception():
     ):
         # Setup mocks
         mock_settings.return_value = MagicMock(
-            log_level="INFO", bunkerweb_base_url="http://localhost:8888"
+            log_level="INFO", bunkerweb_base_url="http://localhost:8888", redact_secrets=False
         )
         mock_client = AsyncMock()
         mock_client_class.return_value = mock_client
@@ -147,7 +148,9 @@ async def test_run_stdio_logs_startup_info():
     ):
         # Setup mocks
         test_url = "http://test-server:9999"
-        mock_settings.return_value = MagicMock(log_level="DEBUG", bunkerweb_base_url=test_url)
+        mock_settings.return_value = MagicMock(
+            log_level="DEBUG", bunkerweb_base_url=test_url, redact_secrets=False
+        )
         mock_client = AsyncMock()
         mock_client_class.return_value = mock_client
         mock_server = AsyncMock()
@@ -180,6 +183,8 @@ async def test_run_stdio_passes_settings_to_components():
             bunkerweb_base_url="http://custom:7777",
             request_timeout_seconds=60.0,
             bunkerweb_logs_path=None,
+            redact_secrets=True,
+            redact_pattern=None,
         )
         mock_settings.return_value = test_settings
 
@@ -202,5 +207,6 @@ async def test_run_stdio_passes_settings_to_components():
             mock_client,
             prompt_catalog=mock_catalog,
             logs_path=None,
+            redaction=RedactionPolicy(),
         )
         mock_create_server.assert_called_once_with(test_settings, mock_tools)

@@ -59,6 +59,7 @@ from .params import (
 
 if TYPE_CHECKING:
     from ..prompt_catalog import PromptCatalog
+    from ..redaction import RedactionPolicy
 
 
 TOOL_DESCRIPTIONS: dict[str, str] = {
@@ -118,6 +119,7 @@ class Tools:
         client: BunkerWebClientProtocol,
         prompt_catalog: PromptCatalog | None = None,
         logs_path: Path | None = None,
+        redaction: RedactionPolicy | None = None,
     ) -> None:
         self._client = client
         from ..prompt_catalog import PromptCatalog
@@ -273,6 +275,11 @@ class Tools:
                     "logs_read": (LogsReadParams, log_reader.read_logs),
                 }
             )
+        if redaction is not None:
+            self._registry = {
+                name: (model, self._redact(name, handler, redaction))
+                for name, (model, handler) in self._registry.items()
+            }
 
     def _wrap(
         self, handler: Callable[[BunkerWebClientProtocol, Any], Awaitable[dict[str, Any]]]
@@ -283,6 +290,20 @@ class Tools:
             return await handler(self._client, params)
 
         return wrapped
+
+    @staticmethod
+    def _redact(
+        name: str,
+        handler: Callable[[Any], Awaitable[dict[str, Any]]],
+        policy: RedactionPolicy,
+    ) -> Callable[[Any], Awaitable[dict[str, Any]]]:
+        """Wrap a handler so its inputs are checked and its output redacted."""
+
+        async def redacted(params: Any) -> dict[str, Any]:
+            policy.check_call(name, params)
+            return policy.redact_result(name, await handler(params))
+
+        return redacted
 
     def list_descriptors(self) -> list[dict[str, Any]]:
         """Return JSON-serializable metadata describing available tools."""

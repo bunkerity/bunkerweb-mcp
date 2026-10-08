@@ -114,6 +114,8 @@ All settings are configurable via environment variables (see `.env.example`):
 | `BUNKERWEB_LOG_LEVEL` | Logging level | `INFO` |
 | `BUNKERWEB_LOGS_PATH` | Optional read-only BunkerWeb runtime log directory | empty |
 | `BUNKERWEB_PROMPT_CATALOG` | Optional JSON file with per-tool prompts | built-in catalog |
+| `BUNKERWEB_REDACT_SECRETS` | Mask BunkerWeb secrets in tool and resource outputs, and refuse writes to sensitive settings (see [docs/security.md](docs/security.md#secret-redaction)) | `false` |
+| `BUNKERWEB_REDACT_PATTERN` | Optional regex replacing the built-in sensitive setting name pattern | built-in pattern |
 | `RATE_LIMIT_ENABLED` | Enable rate limiting (Sprint 2) | `false` |
 | `RATE_LIMIT_TOOLS` | Rate limit for /tools endpoint | `30/minute` |
 | `RATE_LIMIT_RPC` | Rate limit for /rpc endpoint | `100/minute` |
@@ -658,6 +660,9 @@ See [docs/security.md](docs/security.md) for detailed configuration guide.
 - Populate `BUNKERWEB_API_TOKEN` when the target API requires authentication.
 - When using HTTP Basic auth, set `BUNKERWEB_BASIC_USERNAME` and `BUNKERWEB_BASIC_PASSWORD` via secrets management.
 - Set `BUNKERWEB_WEBSOCKET_TOKEN` to require a shared secret for both `/rpc` and `/ws`.
+- Set `BUNKERWEB_REDACT_SECRETS=true` to mask BunkerWeb secrets (DNS credentials, API keys,
+  passwords, private keys) before they reach the LLM client or any aggregator in between.
+  Custom config snippets are not covered; see [docs/security.md](docs/security.md#secret-redaction).
 - Ensure the MCP server runs on a trusted network; the API can modify BunkerWeb state.
 - Use HTTPS via reverse proxy (nginx, Traefik, or BunkerWeb) in production.
 
@@ -667,7 +672,7 @@ See [docs/security.md](docs/security.md) for detailed configuration guide.
 
 - **[Architecture Decision Records (ADR)](docs/adr/README.md)** - Major architectural decisions with context and rationale
 - **[Observability Guide](docs/OBSERVABILITY.md)** - Complete guide to metrics, tracing, and monitoring (Sprint 4)
-- **[Security Guide](docs/security.md)** - DNS rebinding protection and security best practices
+- **[Security Guide](docs/security.md)** - DNS rebinding protection, secret redaction and security best practices
 - **[Claude Development Guide](CLAUDE.md)** - BunkerWeb expertise for Claude Code
 
 ### API Documentation

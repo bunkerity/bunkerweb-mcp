@@ -25,6 +25,7 @@ An Architecture Decision Record (ADR) is a document that captures an important a
 | [0002](0002-externalize-search-service.md) | Externalize Search Service for Semantic Documentation | Accepted | 2024-11-20 |
 | [0003](0003-pydantic-v2-validation.md) | Adopt Pydantic V2 for Data Validation | Accepted | 2024-11-25 |
 | [0004](0004-async-httpx-client.md) | Use Async HTTPX Client for API Calls | Accepted | 2024-12-01 |
+| [0005](0005-secret-redaction.md) | Optional Secret Redaction at the Tool Registry | Proposed | 2026-10-08 |
 
 ## ADR Creation Process
 
