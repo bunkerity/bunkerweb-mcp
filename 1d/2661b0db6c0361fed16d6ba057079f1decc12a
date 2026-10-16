@@ -1,0 +1,23 @@
+.pre-commit-config.yaml
+  s_b86df1b161fb92::t_73b03d011335f1 1-15
+scripts/check-all.sh
+  s_b86df1b161fb92::t_5b206bb6cec638 8-9
+.github/workflows/ci.yml
+  s_b86df1b161fb92::t_5b206bb6cec638 39-41,43-47,78-80,82-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1d2661b0db6c0361fed16d6ba057079f1decc12a",
+  "prompts": {},
+  "sessions": {
+    "s_b86df1b161fb92": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2f512680-2f1e-4458-9d10-6e725ff4e2fd",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
