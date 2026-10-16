@@ -1,0 +1,23 @@
+src/bunkerweb_mcp/__init__.py
+  s_291134f84ffeb4::t_f5e31d15b4463c 7
+deploy/kubernetes/deployment.yaml
+  s_291134f84ffeb4::t_f5e31d15b4463c 10
+deploy/kubernetes/README.md
+  s_291134f84ffeb4::t_f5e31d15b4463c 298
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ea9b60cb12080eb6462a090594a563b58e97deeb",
+  "prompts": {},
+  "sessions": {
+    "s_291134f84ffeb4": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14508-f5da-76a1-bb75-11e0aca436ee",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
