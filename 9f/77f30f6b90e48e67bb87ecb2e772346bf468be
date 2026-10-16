@@ -1,0 +1,22 @@
+tests/test_redaction.py
+  s_c3a20869433770::t_4a9552b08a66a9 456-480
+  s_c3a20869433770::t_561b7f1ea717ce 455
+src/bunkerweb_mcp/redaction.py
+  s_c3a20869433770::t_ac908bd82f1f83 194-198
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9f77f30f6b90e48e67bb87ecb2e772346bf468be",
+  "prompts": {},
+  "sessions": {
+    "s_c3a20869433770": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a144f8-9759-7001-949a-c1d284822fef",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
