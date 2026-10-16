@@ -1,0 +1,43 @@
+.github/workflows/plumber.yml
+  s_a736d9849cc157::t_8aaf049159ca0f 29
+  s_95d6e227bfc24c::t_b87089ae1babee 26
+  s_a736d9849cc157::t_48a00bec9a317f 21-23
+.github/SECURITY.md
+  s_95d6e227bfc24c::t_639992ea086820 1-17
+.github/CODEOWNERS
+  s_a736d9849cc157::t_a8931056770998 5
+  s_95d6e227bfc24c::t_3b111b8d5e7bff 1-4
+.github/plumber/README.md
+  s_95d6e227bfc24c::t_e9ff6ee6d1935d 19
+  s_a736d9849cc157::t_04c1df1c09114f 16
+  s_a736d9849cc157::t_fc9c7673dcee71 25
+  s_a736d9849cc157::t_b9b01821ca4bf6 35
+.github/workflows/scorecards-analysis.yml
+  s_95d6e227bfc24c::t_7e34cc763c81c8 1-37
+.github/workflows/release.yml
+  s_95d6e227bfc24c::t_b25dd26c59d041 70-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "160cd129017b47714f7e5bbd9837588f0be685c2",
+  "prompts": {},
+  "sessions": {
+    "s_95d6e227bfc24c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e9e1ae2-ed41-4988-b779-d7fa9c480538",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    },
+    "s_a736d9849cc157": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "36948c8f-5a44-4648-b5e1-1fc4a6c2a5dd",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
