@@ -1,0 +1,26 @@
+src/bunkerweb_mcp/redaction.py
+  s_2d0d5029631157::t_9c9647552e4b0e 41-61,122-125
+tests/test_client.py
+  s_2d0d5029631157::t_005d9600573d52 12,939-1000,1016-1018,1021-1022
+  s_2d0d5029631157::t_b1b047f48ed2a3 1001-1015,1019-1020
+tests/test_redaction.py
+  s_2d0d5029631157::t_005d9600573d52 11,16,24,527-572
+src/bunkerweb_mcp/client.py
+  s_2d0d5029631157::t_9c9647552e4b0e 9,16,58-97,226,231,236,252,268,283,365,385,393,400,476,484,492,538,574,620,642
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7a4386021ddd610950662abb9063ffc1588c3abe",
+  "prompts": {},
+  "sessions": {
+    "s_2d0d5029631157": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3f8af728-0f2d-4284-a141-e796491a154f",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
