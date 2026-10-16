@@ -1,0 +1,32 @@
+tests/test_skill_catalog.py
+  s_b585f798d1e795::t_a6da12f1b9c0a8 1-46,69-77,80-185
+  s_7066a61a515659::t_1c6662e96d96c1 47-68
+  s_b585f798d1e795::t_abcfb24d93a646 78-79
+src/bunkerweb_mcp/skill_catalog.py
+  s_b585f798d1e795::t_1ec62ed9edf3d5 1-114,117-127
+  s_7066a61a515659::t_6d28eb9c793e2f 115-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c65eef9030a840e32ad0cbb595cce8932cc6bd0b",
+  "prompts": {},
+  "sessions": {
+    "s_7066a61a515659": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "909dbc24-b572-4cb5-a614-30278629e28e",
+        "model": "unknown"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    },
+    "s_b585f798d1e795": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "430b10fb-61ec-4642-b730-748f4d5700b8",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
