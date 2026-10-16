@@ -1,0 +1,19 @@
+Dockerfile
+  s_c350a9a8acb63c::t_ff9718dce4dd2a 15,19-21,38-41,43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a5f289998d4fbcd5991678f9bcbe30935aed2cb2",
+  "prompts": {},
+  "sessions": {
+    "s_c350a9a8acb63c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cb538a85-db1d-4ab1-b6b5-5ab418549ea3",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
