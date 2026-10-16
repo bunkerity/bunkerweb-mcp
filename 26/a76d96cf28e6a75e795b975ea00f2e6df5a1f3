@@ -1,0 +1,28 @@
+src/bunkerweb_mcp/schemas/plugins.py
+  s_43a1880a3bda87::t_f61cbe215352a1 7
+src/bunkerweb_mcp/main.py
+  s_43a1880a3bda87::t_f61cbe215352a1 159-172,217
+tests/test_main.py
+  s_43a1880a3bda87::t_f7a052c91bd2dd 108-110
+tests/test_api.py
+  s_43a1880a3bda87::t_1c24b51d86815e 335-337
+  s_43a1880a3bda87::t_b96dc03fcd9193 2,334,338-341
+  s_43a1880a3bda87::t_07b974e3962bdd 324-333,342-365
+  s_43a1880a3bda87::t_677a4728a54d0d 323,366-367
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "26a76d96cf28e6a75e795b975ea00f2e6df5a1f3",
+  "prompts": {},
+  "sessions": {
+    "s_43a1880a3bda87": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14402-2060-76c3-ae19-30c65f8f1396",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
