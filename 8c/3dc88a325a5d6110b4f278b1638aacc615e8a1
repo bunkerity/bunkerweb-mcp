@@ -1,0 +1,75 @@
+pyproject.toml
+  s_f57a1f4e9df293::t_9413f6b4ffd483 7,67-68
+  s_43a1880a3bda87::t_fd575e3f181f9e 69
+src/bunkerweb_mcp/tracing.py
+  s_f57a1f4e9df293::t_9413f6b4ffd483 24-25,52
+src/bunkerweb_mcp/client.py
+  s_f57a1f4e9df293::t_9413f6b4ffd483 13,66
+tests/test_mcp_protocol.py
+  s_0cc675c7841fd4::t_93fb56006ba50d 30
+  s_f57a1f4e9df293::t_5e01014455a771 14,28-29,31-32
+  s_f57a1f4e9df293::t_b1a6c20045ec44 41-47
+  s_f57a1f4e9df293::t_7d784d4e6e6be3 33-40
+  s_5f4208cf9c4e77::t_b1fd7b798af9a0 48-49
+src/bunkerweb_mcp/main.py
+  s_f57a1f4e9df293::t_9413f6b4ffd483 24
+  s_38af68e247552c::t_6cb86bbda791c1 114,121
+src/bunkerweb_mcp/mcp_adapter.py
+  s_e8917a61014dbb::t_47d9ec2c728009 17,74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8c3dc88a325a5d6110b4f278b1638aacc615e8a1",
+  "prompts": {},
+  "sessions": {
+    "s_0cc675c7841fd4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f67420a6-9075-42ab-9448-b7f7941ab5db",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    },
+    "s_38af68e247552c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "30b61e62-ea26-4b9b-93c3-b7f004db2903",
+        "model": "unknown"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    },
+    "s_43a1880a3bda87": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14402-2060-76c3-ae19-30c65f8f1396",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    },
+    "s_5f4208cf9c4e77": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b2cc76ce-8ebc-4157-b540-8ee83ca1eb32",
+        "model": "unknown"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    },
+    "s_e8917a61014dbb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7ff350ad-bc0b-4556-8679-17b87e179e57",
+        "model": "unknown"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    },
+    "s_f57a1f4e9df293": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a143f1-e91e-7782-ba34-37fc8c4ca9c6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
