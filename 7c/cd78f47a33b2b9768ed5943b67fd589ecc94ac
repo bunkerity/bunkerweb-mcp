@@ -1,0 +1,51 @@
+.mcp.json
+  s_b86df1b161fb92::t_4f9d9044db1a87 8
+docs/OBSERVABILITY.md
+  s_b86df1b161fb92::t_4f9d9044db1a87 154
+n8n-workflows/MCP-Tool-UnbanIP.json
+  s_b86df1b161fb92::t_4f9d9044db1a87 81
+n8n-workflows/MCP-Tool-UpdateService.json
+  s_b86df1b161fb92::t_4f9d9044db1a87 81
+n8n-workflows/MCP-Tool-ListBans.json
+  s_b86df1b161fb92::t_4f9d9044db1a87 79
+n8n-workflows/MCP-Tool-GetService.json
+  s_b86df1b161fb92::t_4f9d9044db1a87 81
+n8n-workflows/MCP-Tool-ReloadConfig.json
+  s_b86df1b161fb92::t_4f9d9044db1a87 81
+.env.example
+  s_b86df1b161fb92::t_4f9d9044db1a87 50
+n8n-workflows/MCP-Tool-DeleteService.json
+  s_b86df1b161fb92::t_4f9d9044db1a87 81
+n8n-workflows/MCP-Tool-ListInstances.json
+  s_b86df1b161fb92::t_4f9d9044db1a87 81
+"n8n-workflows/BunkerWeb AI Agent - MCP Integration.json"
+  s_b86df1b161fb92::t_4f9d9044db1a87 512
+n8n-workflows/MCP-Tool-BanIP.json
+  s_b86df1b161fb92::t_4f9d9044db1a87 81
+n8n-workflows/MCP-Tool-GlobalConfig.json
+  s_b86df1b161fb92::t_4f9d9044db1a87 81
+n8n-workflows/MCP-Tool-CreateService.json
+  s_b86df1b161fb92::t_4f9d9044db1a87 81
+n8n-workflows/MCP-Tool-ListServices.json
+  s_b86df1b161fb92::t_4f9d9044db1a87 79
+deploy/grafana/dashboards/bunkerweb-mcp.json
+  s_b86df1b161fb92::t_4f9d9044db1a87 594
+n8n-workflows/MCP-Tool-SearchDocs.json
+  s_b86df1b161fb92::t_4f9d9044db1a87 81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7ccd78f47a33b2b9768ed5943b67fd589ecc94ac",
+  "prompts": {},
+  "sessions": {
+    "s_b86df1b161fb92": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2f512680-2f1e-4458-9d10-6e725ff4e2fd",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
