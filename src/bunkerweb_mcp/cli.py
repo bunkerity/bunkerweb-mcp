@@ -8,6 +8,7 @@ from .client import BunkerWebClient
 from .config import get_settings
 from .mcp_adapter import create_fastmcp_server
 from .prompt_catalog import load_catalog
+from .redaction import policy_from_settings
 from .tools import Tools
 from .utils.logging import configure_logging
 
@@ -28,6 +29,7 @@ async def run_stdio() -> None:
         client,
         prompt_catalog=prompt_catalog,
         logs_path=settings.bunkerweb_logs_path,
+        redaction=policy_from_settings(settings),
     )
     server = create_fastmcp_server(settings, tools)
 

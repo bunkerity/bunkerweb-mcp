@@ -6,13 +6,14 @@ import base64
 from collections.abc import Iterable
 from http import HTTPStatus
 from typing import Any, TypeVar
+from urllib.parse import quote
 
 import httpx
 from tenacity import AsyncRetrying, retry_if_exception, stop_after_attempt, wait_exponential
 
 from . import __version__
 from .config import Settings, get_settings
-from .exceptions import BunkerWebError
+from .exceptions import BunkerWebError, ToolValidationError
 from .schemas.bans import BanRequestModel, BansResponse, UnbanRequestModel
 from .schemas.cache import CacheFilesDeleteRequest, CacheResponse
 from .schemas.common import ApiResponse, JsonDict
@@ -52,6 +53,46 @@ def _is_retryable(exc: BaseException) -> bool:
             return False
         return bool(response.status_code >= HTTPStatus.INTERNAL_SERVER_ERROR)
     return isinstance(exc, httpx.RequestError)
+
+
+def _segment(value: str, field: str) -> str:
+    """Validate and percent-encode one API path segment.
+
+    Args:
+        value: Caller-supplied segment.
+        field: Parameter name shown in the error message.
+
+    Returns:
+        The segment, percent-encoded with no safe characters.
+
+    Raises:
+        ToolValidationError: If the segment is empty, ``.``/``..``, or contains a
+            path separator, a percent sign or a control character.
+    """
+    if (
+        value in ("", ".", "..")
+        or any(c in "/\\%" for c in value)
+        or any(ord(c) < 32 or ord(c) == 127 for c in value)
+    ):
+        raise ToolValidationError(
+            f"Invalid {field}: path separators, percent signs, control characters "
+            "and '.'/'..' are not allowed"
+        )
+    return quote(value, safe="")
+
+
+def _cache_path(service: str, plugin_id: str, job_name: str, file_name: str) -> str:
+    return (
+        f"/cache/{_segment(service, 'service')}/{_segment(plugin_id, 'plugin_id')}"
+        f"/{_segment(job_name, 'job_name')}/{_segment(file_name, 'file_name')}"
+    )
+
+
+def _config_path(key: ConfigKey) -> str:
+    return (
+        f"/configs/{_segment(key.service or 'global', 'service')}"
+        f"/{_segment(key.type, 'type')}/{_segment(key.name, 'name')}"
+    )
 
 
 class BunkerWebClient:
@@ -121,7 +162,7 @@ class BunkerWebClient:
                         raise
                     raise BunkerWebError(
                         message=self._extract_error_message(response),
-                        status=HTTPStatus(response.status_code),
+                        status=response.status_code,
                     ) from exc
                 return response
 
@@ -182,17 +223,17 @@ class BunkerWebClient:
 
     async def get_instance(self, hostname: str) -> InstancesResponse:
         return await self._request_json(
-            "GET", f"/instances/{hostname}", response_model=InstancesResponse
+            "GET", f"/instances/{_segment(hostname, 'hostname')}", response_model=InstancesResponse
         )
 
     async def ping_instance(self, hostname: str) -> ApiResponse:
         return await self._request_json(
-            "GET", f"/instances/{hostname}/ping", response_model=ApiResponse
+            "GET", f"/instances/{_segment(hostname, 'hostname')}/ping", response_model=ApiResponse
         )
 
     async def stop_instance(self, hostname: str) -> ApiResponse:
         return await self._request_json(
-            "POST", f"/instances/{hostname}/stop", response_model=ApiResponse
+            "POST", f"/instances/{_segment(hostname, 'hostname')}/stop", response_model=ApiResponse
         )
 
     async def create_instance(self, payload: InstanceCreateRequest) -> InstancesResponse:
@@ -208,7 +249,7 @@ class BunkerWebClient:
     ) -> InstancesResponse:
         return await self._request_json(
             "PATCH",
-            f"/instances/{hostname}",
+            f"/instances/{_segment(hostname, 'hostname')}",
             json=payload.model_dump(exclude_none=True),
             response_model=InstancesResponse,
         )
@@ -224,7 +265,7 @@ class BunkerWebClient:
     async def delete_instance(self, hostname: str) -> ApiResponse:
         return await self._request_json(
             "DELETE",
-            f"/instances/{hostname}",
+            f"/instances/{_segment(hostname, 'hostname')}",
             response_model=ApiResponse,
         )
 
@@ -239,7 +280,7 @@ class BunkerWebClient:
     async def reload_instance(self, hostname: str, *, test: bool = True) -> ApiResponse:
         return await self._request_json(
             "POST",
-            f"/instances/{hostname}/reload",
+            f"/instances/{_segment(hostname, 'hostname')}/reload",
             params={"test": str(test).lower()},
             response_model=ApiResponse,
         )
@@ -321,7 +362,7 @@ class BunkerWebClient:
     ) -> ServiceResponse:
         return await self._request_json(
             "GET",
-            f"/services/{service}",
+            f"/services/{_segment(service, 'service')}",
             params={
                 "full": str(full).lower(),
                 "methods": str(methods).lower(),
@@ -341,7 +382,7 @@ class BunkerWebClient:
     async def update_service(self, service: str, payload: ServiceUpdateRequest) -> ServiceResponse:
         return await self._request_json(
             "PATCH",
-            f"/services/{service}",
+            f"/services/{_segment(service, 'service')}",
             json=payload.model_dump(exclude_none=True),
             response_model=ServiceResponse,
         )
@@ -349,14 +390,14 @@ class BunkerWebClient:
     async def delete_service(self, service: str) -> ApiResponse:
         return await self._request_json(
             "DELETE",
-            f"/services/{service}",
+            f"/services/{_segment(service, 'service')}",
             response_model=ApiResponse,
         )
 
     async def convert_service(self, service: str, *, convert_to: str) -> ApiResponse:
         return await self._request_json(
             "POST",
-            f"/services/{service}/convert",
+            f"/services/{_segment(service, 'service')}/convert",
             params={"convert_to": convert_to},
             response_model=ApiResponse,
         )
@@ -432,7 +473,7 @@ class BunkerWebClient:
         params = {"with_data": str(with_data).lower()}
         return await self._request_json(
             "GET",
-            f"/configs/{key.service or 'global'}/{key.type}/{key.name}",
+            _config_path(key),
             params=params,
             response_model=ConfigResponse,
         )
@@ -440,7 +481,7 @@ class BunkerWebClient:
     async def update_config(self, key: ConfigKey, payload: ConfigUpdateRequest) -> ConfigResponse:
         return await self._request_json(
             "PATCH",
-            f"/configs/{key.service or 'global'}/{key.type}/{key.name}",
+            _config_path(key),
             json=payload.model_dump(exclude_none=True),
             response_model=ConfigResponse,
         )
@@ -448,7 +489,7 @@ class BunkerWebClient:
     async def delete_config(self, key: ConfigKey) -> ApiResponse:
         return await self._request_json(
             "DELETE",
-            f"/configs/{key.service or 'global'}/{key.type}/{key.name}",
+            _config_path(key),
             response_model=ApiResponse,
         )
 
@@ -494,7 +535,7 @@ class BunkerWebClient:
             data["new_is_draft"] = str(new_is_draft).lower()
         response = await self._request(
             "PATCH",
-            f"/configs/{key.service or 'global'}/{key.type}/{key.name}/upload",
+            f"{_config_path(key)}/upload",
             files={"file": (file_name, content)},
             data=data,
         )
@@ -530,7 +571,7 @@ class BunkerWebClient:
     async def delete_plugin(self, plugin_id: str) -> ApiResponse:
         return await self._request_json(
             "DELETE",
-            f"/plugins/{plugin_id}",
+            f"/plugins/{_segment(plugin_id, 'plugin_id')}",
             response_model=ApiResponse,
         )
 
@@ -576,7 +617,7 @@ class BunkerWebClient:
         params = {"download": str(download).lower()}
         response = await self._request(
             "GET",
-            f"/cache/{service}/{plugin_id}/{job_name}/{file_name}",
+            _cache_path(service, plugin_id, job_name, file_name),
             params=params,
         )
         content_type = response.headers.get("content-type", "")
@@ -598,7 +639,7 @@ class BunkerWebClient:
     ) -> ApiResponse:
         return await self._request_json(
             "DELETE",
-            f"/cache/{service}/{plugin_id}/{job_name}/{file_name}",
+            _cache_path(service, plugin_id, job_name, file_name),
             response_model=ApiResponse,
         )
 

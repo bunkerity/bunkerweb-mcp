@@ -75,6 +75,8 @@ token wins over Basic. The server has no per-client roles or read-only mode, and
 change or delete BunkerWeb state (`delete_service`, `instance_stop`, `plugins_upload`,
 `unban_ip`, ...). Keep that in mind when adding tools or changing authentication.
 
+`BUNKERWEB_REDACT_SECRETS` masks by setting name in registry tool results and withholds upstream error details; logs, custom config text and docs search are outside it (`docs/security.md`, "Secret Redaction"). Build any API path from `client._segment`, never a raw f-string.
+
 ## Build, Test, and Development Commands
 
 Use Python 3.11 or newer:

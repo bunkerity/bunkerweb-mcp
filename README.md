@@ -142,6 +142,8 @@ environment variables can override them. `unset` denotes an absent value or an e
 | `BUNKERWEB_LOG_LEVEL` | `INFO` | Application log level. |
 | `BUNKERWEB_LOGS_PATH` | `unset` | Runtime log directory; unset disables log tools. Mount read-only. |
 | `BUNKERWEB_PROMPT_CATALOG` | `unset` | Custom tool-prompt JSON path; unset uses the bundled catalog. |
+| `BUNKERWEB_REDACT_SECRETS` | `false` | Mask the values of settings whose names match a sensitive pattern in tool and resource outputs, withhold upstream error details and refuse writes to sensitive settings. See Security. |
+| `BUNKERWEB_REDACT_PATTERN` | `unset` | Regular expression that replaces the built-in sensitive setting name pattern; unset keeps the built-in one. Avoid nested quantifiers such as `(a+)+$`. |
 | `SEARCH_MODE` | `remote` | `remote` enables documentation search; `disabled` omits the tool. Compose and `.env.example` use `disabled`. |
 | `SEARCH_API_URL` | `http://localhost:8000` | URL of the remote search service API. |
 | `SEARCH_TIMEOUT` | `10.0` | Search API request timeout in seconds. |
@@ -244,6 +246,13 @@ Keep HTTP on a trusted network or behind an authenticated reverse proxy. Use TLS
 for remote connections, restrict the exposed endpoints, and configure
 `MCP_ALLOWED_HOSTS` and `MCP_ALLOWED_ORIGINS` for your clients. DNS rebinding
 protection does not replace authentication. See [docs/security.md](docs/security.md).
+
+Set `BUNKERWEB_REDACT_SECRETS=true` to mask the values of sensitive settings (matched by
+name) in tool and resource outputs before they reach the client. Upstream API error
+details are withheld and only the HTTP status is returned. It is not a content scanner:
+custom config snippets, log lines, documentation search results, cache files outside the
+denylist and secrets embedded in other values are not masked. See
+[docs/security.md](docs/security.md#secret-redaction).
 
 ## Observability
 

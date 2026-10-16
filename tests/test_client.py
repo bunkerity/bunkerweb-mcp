@@ -9,7 +9,7 @@ import pytest
 
 from bunkerweb_mcp.client import BunkerWebClient
 from bunkerweb_mcp.config import Settings
-from bunkerweb_mcp.exceptions import BunkerWebError
+from bunkerweb_mcp.exceptions import BunkerWebError, ToolValidationError
 from bunkerweb_mcp.schemas.bans import BanRequestModel, BansResponse, UnbanRequestModel
 from bunkerweb_mcp.schemas.cache import CacheFileKey, CacheFilesDeleteRequest, CacheResponse
 from bunkerweb_mcp.schemas.common import ApiResponse
@@ -936,3 +936,87 @@ def test_extract_error_message_variants() -> None:
     assert client._extract_error_message(dict_response) == "bad"
     assert client._extract_error_message(list_response) == "['oops']"
     assert client._extract_error_message(text_response) == "plain"
+
+
+ROUTE_ALIASES = [
+    ("bunkernet", "job", "%69nstance.id"),
+    ("misc/../letsencrypt", "job", "credentials.ini"),
+    ("misc", "x/../../letsencrypt/job", "credentials.ini"),
+    ("misc", "job", "x/../../../letsencrypt/job/credentials.ini"),
+    ("other", "job", "client%2ekey"),
+    ("misc", "job", ".."),
+    ("misc", "job", "a\\b"),
+    ("misc", "job", "a\nb"),
+]
+
+
+def _recording_client(
+    requests: list[httpx.Request],
+) -> tuple[BunkerWebClient, httpx.AsyncClient]:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json={"status": "success"})
+
+    async_client = httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://testserver"
+    )
+    return BunkerWebClient(_make_settings(), client=async_client), async_client
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("plugin_id", "job_name", "file_name"), ROUTE_ALIASES)
+async def test_path_segment_rejects_route_aliases(
+    plugin_id: str, job_name: str, file_name: str
+) -> None:
+    requests: list[httpx.Request] = []
+    client, async_client = _recording_client(requests)
+    async with async_client:
+        with pytest.raises(ToolValidationError, match="Invalid .*: path separators"):
+            await client.fetch_cache_file(
+                service="global", plugin_id=plugin_id, job_name=job_name, file_name=file_name
+            )
+        await client.close()
+    assert requests == []
+
+
+@pytest.mark.asyncio
+async def test_path_segment_encodes_once() -> None:
+    requests: list[httpx.Request] = []
+    client, async_client = _recording_client(requests)
+    async with async_client:
+        await client.get_instance("bw-1:5000")
+        await client.delete_cache_file(
+            service="global", plugin_id="misc", job_name="job", file_name="ip list.txt"
+        )
+        await client.get_service("exämple.com")
+        await client.close()
+    assert [r.url.raw_path.decode().split("?")[0] for r in requests] == [
+        "/instances/bw-1%3A5000",
+        "/cache/global/misc/job/ip%20list.txt",
+        "/services/ex%C3%A4mple.com",
+    ]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("method", "kwargs"),
+    [
+        ("delete_service", {"service": ".."}),
+        ("delete_plugin", {"plugin_id": ".."}),
+        ("stop_instance", {"hostname": "."}),
+        (
+            "delete_cache_file",
+            {"service": "global", "plugin_id": "misc", "job_name": "job", "file_name": ".."},
+        ),
+    ],
+)
+async def test_path_segment_rejects_dot_segments_everywhere(
+    method: str, kwargs: dict[str, str]
+) -> None:
+    requests: list[httpx.Request] = []
+    client, async_client = _recording_client(requests)
+    async with async_client:
+        with pytest.raises(ToolValidationError):
+            await getattr(client, method)(**kwargs)
+        await client.close()
+    assert requests == []
