@@ -1,0 +1,47 @@
+docs/adr/0003-pydantic-v2-validation.md
+  s_b86df1b161fb92::t_4f9d9044db1a87 100,105-108
+docs/adr/0002-externalize-search-service.md
+  s_b86df1b161fb92::t_4f9d9044db1a87 150-152
+docs/adr/0004-async-httpx-client.md
+  s_b86df1b161fb92::t_4f9d9044db1a87 92-95,98,100,102-103,114,121,132,242,244
+  s_b86df1b161fb92::t_5700a172137bd5 273
+README.md
+  s_268ba54614e250::t_e14c925ad578dd 15
+  s_268ba54614e250::t_67f3a1c86580e3 46-47,61,91-92,95-97,100-101,129,150-151,191,199,201,209,211-214,216-219,221-222
+  s_268ba54614e250::t_0736b11c37cdaf 28-45,49-60,63-72,78-79,85-87,89,102,104-105,111-115,122-123,125,127-128,131-149,152-170,172-190,192-198,203-205,207,224,226-228,230,232-237,239-241,243-246,250-255,258-283,286-287
+  s_268ba54614e250::t_4ba02dd1d03db6 256-257
+  s_268ba54614e250::t_f6648ded2cb76d 1-14,16-26
+  s_5f4208cf9c4e77::t_e45b56414440a7 27,48,62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "84d655b5bf91f1e6f25178b4e14fa475a507e2dd",
+  "prompts": {},
+  "sessions": {
+    "s_268ba54614e250": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a143ff-feee-7c21-81dc-1c2d2e48e848",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    },
+    "s_5f4208cf9c4e77": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b2cc76ce-8ebc-4157-b540-8ee83ca1eb32",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    },
+    "s_b86df1b161fb92": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2f512680-2f1e-4458-9d10-6e725ff4e2fd",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
