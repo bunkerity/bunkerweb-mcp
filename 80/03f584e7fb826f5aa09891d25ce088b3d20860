@@ -1,0 +1,22 @@
+.coderabbit.yaml
+  s_de6605426d4aec::t_9a0ecb3ba3c7b7 188
+  s_de6605426d4aec::t_ea881e626b852e 1-187,189-207
+.github/CODEOWNERS
+  s_de6605426d4aec::t_ea881e626b852e 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8003f584e7fb826f5aa09891d25ce088b3d20860",
+  "prompts": {},
+  "sessions": {
+    "s_de6605426d4aec": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14418-72c4-7663-b70a-4ebd1a792f6c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
