@@ -1,0 +1,31 @@
+src/bunkerweb_mcp/redaction.py
+  s_2f6ce193ae9fb1::t_6b52e26d4653c0 10,13,16,87-91,302-330
+src/bunkerweb_mcp/tools/registry.py
+  s_2f6ce193ae9fb1::t_4219a5547b537e 10
+  s_2f6ce193ae9fb1::t_6b52e26d4653c0 305-311
+tests/test_redaction.py
+  s_2f6ce193ae9fb1::t_0b8f737887c5dd 579-747,755-757,759-762
+  s_2f6ce193ae9fb1::t_da884ab27ba6a9 750-752
+  s_2f6ce193ae9fb1::t_4e571844f9a636 753-754,758
+  s_2f6ce193ae9fb1::t_01e845c2cf4a57 23-24
+  s_2f6ce193ae9fb1::t_5f647a9c504562 6,8-9
+  s_2f6ce193ae9fb1::t_804df1d2874b45 763
+  s_2f6ce193ae9fb1::t_13961d3f75d8d5 16-17
+  s_2f6ce193ae9fb1::t_fa4d1d84b2269a 748-749
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7101f5c9b575ff1c0ade23029481bdf01b9fde6d",
+  "prompts": {},
+  "sessions": {
+    "s_2f6ce193ae9fb1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "702c2656-83cf-4684-84f2-7aee3f9d855e",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
