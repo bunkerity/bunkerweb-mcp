@@ -1,0 +1,262 @@
+README.md
+  s_d8b5818734e9e4::t_c2381988f7f674 1-72,78-79,85-87,89,91-92,95-97,100-102,104-105,111-115,122-123,125,127-129,131-144,147-172,174-201,203,205-207,209,211,213-216,218-221,223-224,226,228-230,232,234-239,241-243,245-248,256-289,292-293
+  s_d8b5818734e9e4::t_2e554f6467b4ab 145-146,250-252
+tests/test_main.py
+  s_d8b5818734e9e4::t_b021becabffd28 112-114,142,145,434-458
+.coderabbit.yaml
+  s_2e8fbf378c2a77::t_1985ce359dd7ad 1-207
+.env.example
+  s_2e8fbf378c2a77::t_106dcc2efc1928 46-48,62
+.github/CODEOWNERS
+  s_2e8fbf378c2a77::t_c8f6809ce0aa06 1-7
+.github/SECURITY.md
+  s_2e8fbf378c2a77::t_59d4f947bbff7a 1-17
+.github/plumber/README.md
+  s_2e8fbf378c2a77::t_9bf3e13f3cc778 16,19,25,35
+.github/workflows/ci.yml
+  s_2e8fbf378c2a77::t_2d58cbcecebca4 39-41,43-49,54-55,82-84,86-90
+.github/workflows/plumber.yml
+  s_2e8fbf378c2a77::t_f36ba0a2c98b2e 21-23,26,29
+.github/workflows/release.yml
+  s_2e8fbf378c2a77::t_64a15f41da0fa3 70-71
+.github/workflows/scorecards-analysis.yml
+  s_2e8fbf378c2a77::t_b1522aa6f2c571 1-37
+.mcp.json
+  s_2e8fbf378c2a77::t_320a6b09ae96b9 8
+.pre-commit-config.yaml
+  s_2e8fbf378c2a77::t_beb522678b6170 1-15
+AGENTS.md
+  s_2e8fbf378c2a77::t_203d59231013cb 3-21,24-76,85-87,90-91,94-117,138-143,149-161
+CLAUDE.md
+  s_2e8fbf378c2a77::t_7976953ceb7b10 1,3
+Dockerfile
+  s_2e8fbf378c2a77::t_5faca5f234a7a5 15,19-21,38-41,43
+SKILLS_REF
+  s_2e8fbf378c2a77::t_ef2bda8ebfc2ef 1
+deploy/grafana/dashboards/bunkerweb-mcp.json
+  s_2e8fbf378c2a77::t_e509515e57720e 594
+docs/OBSERVABILITY.md
+  s_2e8fbf378c2a77::t_36a8e943b3ab1d 154
+docs/adr/0002-externalize-search-service.md
+  s_2e8fbf378c2a77::t_00f266ba7ec459 150-152
+docs/adr/0003-pydantic-v2-validation.md
+  s_2e8fbf378c2a77::t_182ea6a1b9bcb4 100,105-108
+docs/adr/0004-async-httpx-client.md
+  s_2e8fbf378c2a77::t_5e791bd74f6d6c 92-95,98,100,102-103,114,121,132,242,244,273
+"n8n-workflows/BunkerWeb AI Agent - MCP Integration.json"
+  s_2e8fbf378c2a77::t_27e4490d2b20f1 512
+n8n-workflows/MCP-Tool-BanIP.json
+  s_2e8fbf378c2a77::t_4621a6084dddcc 81
+n8n-workflows/MCP-Tool-CreateService.json
+  s_2e8fbf378c2a77::t_f0d3da6f756ce3 81
+n8n-workflows/MCP-Tool-DeleteService.json
+  s_2e8fbf378c2a77::t_5a943a3eecd0af 81
+n8n-workflows/MCP-Tool-GetService.json
+  s_2e8fbf378c2a77::t_ad139d42c3bc2f 81
+n8n-workflows/MCP-Tool-GlobalConfig.json
+  s_2e8fbf378c2a77::t_4dd4dc15c9dbc9 81
+n8n-workflows/MCP-Tool-ListBans.json
+  s_2e8fbf378c2a77::t_d1e7fce9e1d702 79
+n8n-workflows/MCP-Tool-ListInstances.json
+  s_2e8fbf378c2a77::t_9214d0509fa956 81
+n8n-workflows/MCP-Tool-ListServices.json
+  s_2e8fbf378c2a77::t_12d89f3c68ec0e 79
+n8n-workflows/MCP-Tool-ReloadConfig.json
+  s_2e8fbf378c2a77::t_d1330c0c09cc3c 81
+n8n-workflows/MCP-Tool-SearchDocs.json
+  s_2e8fbf378c2a77::t_f2db82c8b6f2b9 81
+n8n-workflows/MCP-Tool-UnbanIP.json
+  s_2e8fbf378c2a77::t_963cd4e8b9aded 81
+n8n-workflows/MCP-Tool-UpdateService.json
+  s_2e8fbf378c2a77::t_2aacc3d1bbf6de 81
+pyproject.toml
+  s_2e8fbf378c2a77::t_f2efef7b46bd1d 7,32-33,35,55,67-69,74
+requirements-build.in
+  s_2e8fbf378c2a77::t_7d880d035b7e5c 1-3
+requirements-build.txt
+  s_2e8fbf378c2a77::t_ea7c96720bae06 1-31
+requirements-dev.in
+  s_2e8fbf378c2a77::t_b1a29049d052ec 1-10
+requirements-dev.txt
+  s_2e8fbf378c2a77::t_b0cd211af31443 1-3051
+requirements.in
+  s_2e8fbf378c2a77::t_b971403a23bc46 1-18
+requirements.txt
+  s_2e8fbf378c2a77::t_0a364cbbdf4259 1-1393
+scripts/check-all.sh
+  s_2e8fbf378c2a77::t_33d1fddb4bfb44 8-9
+scripts/sync_skills.py
+  s_2e8fbf378c2a77::t_627249195986ae 1-178
+src/bunkerweb_mcp/client.py
+  s_2e8fbf378c2a77::t_0e187365c1fa0b 13,66
+src/bunkerweb_mcp/config.py
+  s_2e8fbf378c2a77::t_40fa541d2a5fe6 125-130
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-apache/SKILL.md
+  s_2e8fbf378c2a77::t_b8b19aa66cc189 1-76
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-apache/references/mapping.md
+  s_2e8fbf378c2a77::t_8791d5b431f59d 1-41
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-apache/references/verified-live.md
+  s_2e8fbf378c2a77::t_fe4e8727a9aa57 1-24
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-caddy/SKILL.md
+  s_2e8fbf378c2a77::t_997f6ddfdd3d1b 1-92
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-caddy/references/mapping.md
+  s_2e8fbf378c2a77::t_ff32879dfca825 1-42
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-caddy/references/verified-live.md
+  s_2e8fbf378c2a77::t_675d9277e5e1b9 1-117
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-haproxy/SKILL.md
+  s_2e8fbf378c2a77::t_796b6504ca4c69 1-76
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-haproxy/references/mapping.md
+  s_2e8fbf378c2a77::t_b53fb01f0792b6 1-40
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-haproxy/references/verified-live.md
+  s_2e8fbf378c2a77::t_5ea74681ba046a 1-27
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-ingress-nginx/SKILL.md
+  s_2e8fbf378c2a77::t_b5780856612c3e 1-97
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-ingress-nginx/references/mapping.md
+  s_2e8fbf378c2a77::t_25f3ae27af436f 1-141
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-ingress-nginx/references/verified-live.md
+  s_2e8fbf378c2a77::t_317ff65c916264 1-76
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-modsecurity/SKILL.md
+  s_2e8fbf378c2a77::t_2438b5ef3bdae6 1-89
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-modsecurity/references/mapping.md
+  s_2e8fbf378c2a77::t_102933ec13cae5 1-45
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-modsecurity/references/verified-live.md
+  s_2e8fbf378c2a77::t_7946c8f0aedf2c 1-157
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-nginx-proxy-manager/SKILL.md
+  s_2e8fbf378c2a77::t_bc4b97c35de37d 1-103
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-nginx-proxy-manager/references/mapping.md
+  s_2e8fbf378c2a77::t_7b8d3ddf39b630 1-98
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-nginx-proxy-manager/references/verified-live.md
+  s_2e8fbf378c2a77::t_6b890e5164c4b4 1-137
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-nginx/SKILL.md
+  s_2e8fbf378c2a77::t_1167416d711039 1-86
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-nginx/references/mapping.md
+  s_2e8fbf378c2a77::t_402d2a7cf7816c 1-51
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-nginx/references/verified-live.md
+  s_2e8fbf378c2a77::t_2179a6ab023ce9 1-104
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-swag/SKILL.md
+  s_2e8fbf378c2a77::t_08243c8c40df24 1-82
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-swag/references/mapping.md
+  s_2e8fbf378c2a77::t_b701cc48cfc3bc 1-72
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-swag/references/verified-live.md
+  s_2e8fbf378c2a77::t_807f20e618f9c7 1-112
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-traefik/SKILL.md
+  s_2e8fbf378c2a77::t_7f17772e5aa72b 1-92
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-traefik/references/mapping.md
+  s_2e8fbf378c2a77::t_2edfb3594fc1a8 1-97
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate-traefik/references/verified-live.md
+  s_2e8fbf378c2a77::t_e8acdff6a7a877 1-74
+src/bunkerweb_mcp/data/skills/bunkerweb-migrate/SKILL.md
+  s_2e8fbf378c2a77::t_9ac4261b16dad5 1-79
+src/bunkerweb_mcp/data/skills/bunkerweb-modsecurity-crs-tuning/SKILL.md
+  s_2e8fbf378c2a77::t_1c7c76b4d41012 1-177
+src/bunkerweb_mcp/data/skills/bunkerweb-modsecurity-crs-tuning/reference.md
+  s_2e8fbf378c2a77::t_4fd70b8c8fb5e5 1-104
+src/bunkerweb_mcp/data/skills/bunkerweb-troubleshooting/SKILL.md
+  s_2e8fbf378c2a77::t_146ef6311c6a18 1-99
+src/bunkerweb_mcp/data/skills/bunkerweb-troubleshooting/references/modules.md
+  s_2e8fbf378c2a77::t_387a936988a414 1-71
+src/bunkerweb_mcp/data/skills/bunkerweb/SKILL.md
+  s_2e8fbf378c2a77::t_35def531376b2c 1-98
+src/bunkerweb_mcp/data/skills/bunkerweb/references/all-in-one.md
+  s_2e8fbf378c2a77::t_e29025b055558d 1-115
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/authentik.md
+  s_2e8fbf378c2a77::t_7b4259cdc326d3 1-40
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/directus.md
+  s_2e8fbf378c2a77::t_15596b26ff43e7 1-33
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/drupal.md
+  s_2e8fbf378c2a77::t_ff13a7e378641f 1-31
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/forgejo.md
+  s_2e8fbf378c2a77::t_babd350f425b59 1-57
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/grafana.md
+  s_2e8fbf378c2a77::t_8210336f81899b 1-37
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/home-assistant.md
+  s_2e8fbf378c2a77::t_b763d0eff94b72 1-44
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/immich.md
+  s_2e8fbf378c2a77::t_850eeefafb5020 1-28
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/jellyfin.md
+  s_2e8fbf378c2a77::t_89ad4e2ff0f630 1-44
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/keycloak.md
+  s_2e8fbf378c2a77::t_bd33acbf6cc71a 1-34
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/netbird.md
+  s_2e8fbf378c2a77::t_29c1510ab75089 1-45
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/nextcloud.md
+  s_2e8fbf378c2a77::t_a14c4d15b91fc3 1-38
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/paperless-ngx.md
+  s_2e8fbf378c2a77::t_7734c51acb3bfe 1-44
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/pi-hole.md
+  s_2e8fbf378c2a77::t_39ea9f425a80ea 1-43
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/seafile.md
+  s_2e8fbf378c2a77::t_6f6d65eb51a1c7 1-38
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/synapse.md
+  s_2e8fbf378c2a77::t_982598b1b2e38a 1-53
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/tomcat.md
+  s_2e8fbf378c2a77::t_49853932a5dae3 1-38
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/tuwunel.md
+  s_2e8fbf378c2a77::t_04f93f039253d2 1-49
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/uptime-kuma.md
+  s_2e8fbf378c2a77::t_a8c6edb13705da 1-30
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/vaultwarden.md
+  s_2e8fbf378c2a77::t_4eb4b5b9797409 1-55
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/wordpress.md
+  s_2e8fbf378c2a77::t_8ff9b31cd06a4b 1-46
+src/bunkerweb_mcp/data/skills/bunkerweb/references/apps/xen-orchestra.md
+  s_2e8fbf378c2a77::t_aa54daffe4c34c 1-43
+src/bunkerweb_mcp/data/skills/bunkerweb/references/autoconf.md
+  s_2e8fbf378c2a77::t_2ed20d05c8058e 1-186
+src/bunkerweb_mcp/data/skills/bunkerweb/references/docker.md
+  s_2e8fbf378c2a77::t_7112a2d3827dee 1-210
+src/bunkerweb_mcp/data/skills/bunkerweb/references/kubernetes.md
+  s_2e8fbf378c2a77::t_9aec01f0b4fa35 1-137
+src/bunkerweb_mcp/data/skills/bunkerweb/references/linux.md
+  s_2e8fbf378c2a77::t_0431d6f8166959 1-110
+src/bunkerweb_mcp/main.py
+  s_2e8fbf378c2a77::t_35aaeb8f97757c 15,25,79-85,126,133,165-178,223
+src/bunkerweb_mcp/mcp_adapter.py
+  s_2e8fbf378c2a77::t_d500291342d64d 7,13,17,20,73-75,77-84,107,110,115-132,242,252
+src/bunkerweb_mcp/prompt_catalog.py
+  s_2e8fbf378c2a77::t_1f7944e5e23f01 39
+src/bunkerweb_mcp/schemas/plugins.py
+  s_2e8fbf378c2a77::t_0365eb4fc8d101 7
+src/bunkerweb_mcp/search_client.py
+  s_2e8fbf378c2a77::t_5934ee72e3ea17 12-13,59-61,64,67-68
+src/bunkerweb_mcp/skill_catalog.py
+  s_2e8fbf378c2a77::t_a1e2cf59c535a8 1-127
+src/bunkerweb_mcp/tracing.py
+  s_2e8fbf378c2a77::t_b8c0a73605783c 24-25,52
+tests/test_api.py
+  s_2e8fbf378c2a77::t_398148f8114127 2,323-367
+tests/test_locks.py
+  s_2e8fbf378c2a77::t_2d6bd60689759c 1-132
+tests/test_mcp_adapter.py
+  s_2e8fbf378c2a77::t_3194192e4a4073 13-14,220-223,225-226,232-302
+tests/test_mcp_protocol.py
+  s_2e8fbf378c2a77::t_341d23d841e267 4,15,21,30-51,61,175-178,184,191-209
+tests/test_skill_catalog.py
+  s_2e8fbf378c2a77::t_b6d43a9b7ebec9 1-185
+tests/test_sync_skills.py
+  s_2e8fbf378c2a77::t_e62b63d9f7757f 1-204
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c4f4a2540a4608ba3529357e31d34190fdac6ffb",
+  "prompts": {},
+  "sessions": {
+    "s_2e8fbf378c2a77": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "60723921-5dd8-4684-9306-37fb1c81b8f1",
+        "model": "unknown"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    },
+    "s_d8b5818734e9e4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7474fef7-a49e-4609-9047-f0b42ab26916",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
