@@ -14,6 +14,7 @@
   <a href="https://github.com/bunkerity/bunkerweb-mcp/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/bunkerity/bunkerweb-mcp/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="https://score.getplumber.io/github.com/bunkerity/bunkerweb-mcp"><img alt="Plumber CI/CD security score" src="https://score.getplumber.io/github.com/bunkerity/bunkerweb-mcp.svg" /></a>
   <a href="https://securityscorecards.dev/viewer/?uri=github.com/bunkerity/bunkerweb-mcp"><img alt="OpenSSF Scorecard" src="https://api.securityscorecards.dev/projects/github.com/bunkerity/bunkerweb-mcp/badge" /></a>
+  <a href="https://glama.ai/mcp/servers/bunkerity/bunkerweb-mcp"><img alt="Glama MCP server score" src="https://glama.ai/mcp/servers/bunkerity/bunkerweb-mcp/badges/score.svg" /></a>
   <a href="https://hub.docker.com/r/bunkerity/bunkerweb-mcp"><img alt="Docker pulls" src="https://img.shields.io/docker/pulls/bunkerity/bunkerweb-mcp" /></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg" /></a>
 </p>
