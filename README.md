@@ -15,7 +15,7 @@
   <a href="https://score.getplumber.io/github.com/bunkerity/bunkerweb-mcp"><img alt="Plumber CI/CD security score" src="https://score.getplumber.io/github.com/bunkerity/bunkerweb-mcp.svg" /></a>
   <a href="https://securityscorecards.dev/viewer/?uri=github.com/bunkerity/bunkerweb-mcp"><img alt="OpenSSF Scorecard" src="https://api.securityscorecards.dev/projects/github.com/bunkerity/bunkerweb-mcp/badge" /></a>
   <a href="https://hub.docker.com/r/bunkerity/bunkerweb-mcp"><img alt="Docker pulls" src="https://img.shields.io/docker/pulls/bunkerity/bunkerweb-mcp" /></a>
-  <a href="pyproject.toml"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg" /></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg" /></a>
 </p>
 
 <p align="center">
@@ -293,4 +293,4 @@ The [architecture decisions](docs/adr/README.md) record design context.
 
 ## License
 
-MIT, as declared in [pyproject.toml](pyproject.toml).
+MIT. See [LICENSE](LICENSE).
