@@ -1,0 +1,21 @@
+LICENSE
+  s_8348da06cfe9ac::t_de8547d1480b0f 1-18
+README.md
+  s_8348da06cfe9ac::t_3174f5cad5680e 18,296
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2a30a5939baf8c6717d51ecd85748b55ed0e3c9d",
+  "prompts": {},
+  "sessions": {
+    "s_8348da06cfe9ac": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a158b1-b8a0-7e21-a391-b6895ed929e6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
