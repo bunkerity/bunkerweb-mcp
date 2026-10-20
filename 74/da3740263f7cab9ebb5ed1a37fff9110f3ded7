@@ -1,0 +1,19 @@
+glama.json
+  s_8348da06cfe9ac::t_eeb91ad612e36c 1-6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "74da3740263f7cab9ebb5ed1a37fff9110f3ded7",
+  "prompts": {},
+  "sessions": {
+    "s_8348da06cfe9ac": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a158b1-b8a0-7e21-a391-b6895ed929e6",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
