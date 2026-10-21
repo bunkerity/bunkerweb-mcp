@@ -1,0 +1,35 @@
+src/bunkerweb_mcp/mcp_adapter.py
+  s_88c82cf993802d::t_b96a3e2c59f9b7 8,14,47-48,54,88
+  s_88c82cf993802d::t_f04f136128e425 46
+  s_88c82cf993802d::t_973d1ffa1dbf63 89
+tests/test_mcp_adapter.py
+  s_88c82cf993802d::t_d13c82e5c32851 344-366
+tests/test_tools.py
+  s_88c82cf993802d::t_fd2e192565ec3b 7,35,38-40
+  s_88c82cf993802d::t_d13c82e5c32851 9,41-108
+  s_88c82cf993802d::t_ccc0cf6f32610d 109
+src/bunkerweb_mcp/tools/params.py
+  s_88c82cf993802d::t_fd2e192565ec3b 204-207,303-306
+src/bunkerweb_mcp/data/tool_prompts.json
+  s_88c82cf993802d::t_b96a3e2c59f9b7 23,26,28,31,35,38
+src/bunkerweb_mcp/tools/registry.py
+  s_88c82cf993802d::t_fd2e192565ec3b 71-73
+  s_88c82cf993802d::t_b96a3e2c59f9b7 74-77,79,85,88-94,96-97,100-103,105,108-113,115-116
+  s_88c82cf993802d::t_c30c675daa37dd 118,120,122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8aacb5d7fa9472e3c38b2b2120829dbd3c627bd5",
+  "prompts": {},
+  "sessions": {
+    "s_88c82cf993802d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a159ee-9acb-76d0-934c-68860cc7b220",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
