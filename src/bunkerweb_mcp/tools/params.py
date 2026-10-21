@@ -201,7 +201,10 @@ class DiagnoseParams(_BaseToolParams):
 
 
 class ReloadParams(_BaseToolParams):
-    test: bool = Field(True, description="Run the reload in validation-only mode")
+    test: bool = Field(
+        True,
+        description="Test the configuration first and reload only if the test passes; this still reloads, it is not a dry run.",
+    )
 
 
 class HostnameParams(ReloadParams):
@@ -297,7 +300,10 @@ class ServiceUpdateParams(_BaseToolParams):
     service: str = Field(..., description="Existing service identifier")
     server_name: str | None = Field(default=None, description="Rename the service")
     is_draft: bool | None = Field(default=None, description="Toggle draft state")
-    variables: dict[str, str] | None = Field(default=None, description="Variables to upsert")
+    variables: dict[str, str] | None = Field(
+        default=None,
+        description="Unprefixed per-service setting names and values; unknown or externally owned names are skipped and reported.",
+    )
 
 
 class ServiceConvertParams(_BaseToolParams):

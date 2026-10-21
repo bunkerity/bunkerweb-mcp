@@ -4,8 +4,9 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from bunkerweb_mcp.config import Settings
 from bunkerweb_mcp.exceptions import BunkerWebError, ToolExecutionError, ToolValidationError
-from bunkerweb_mcp.prompt_catalog import PromptCatalog
+from bunkerweb_mcp.prompt_catalog import PromptCatalog, load_catalog
 from bunkerweb_mcp.schemas.bans import BanRequestModel, BansResponse, UnbanRequestModel
 from bunkerweb_mcp.schemas.cache import CacheFileKey, CacheFilesDeleteRequest
 from bunkerweb_mcp.schemas.common import ApiResponse
@@ -31,7 +32,80 @@ from bunkerweb_mcp.schemas.services import (
     ServicesResponse,
 )
 from bunkerweb_mcp.tools import Tools
+from bunkerweb_mcp.tools.params import ReloadParams
 from bunkerweb_mcp.tools.registry import TOOL_DESCRIPTIONS, TOOL_EFFECTS, ToolEffect, effect_for
+
+SAVED_PHRASE = (
+    "Saved to the database; the scheduler applies it later; this tool cannot confirm it is live."
+)
+DIRECT_PHRASE = "Acts on the instances immediately."
+QUEUED_PHRASE = "Queued for the scheduler; this tool cannot confirm it ran."
+
+# Route paths below are relative to bunkerweb-dev/src/api/app/routers/.
+WRITE_TIMING = {
+    "create_service": SAVED_PHRASE,
+    "update_service": SAVED_PHRASE,
+    "delete_service": SAVED_PHRASE,
+    "convert_service": SAVED_PHRASE,
+    "global_config_update": SAVED_PHRASE,
+    "config_create": SAVED_PHRASE,
+    "config_update": SAVED_PHRASE,
+    "config_delete": SAVED_PHRASE,
+    "configs_delete_bulk": SAVED_PHRASE,
+    "configs_upload": SAVED_PHRASE,
+    "config_upload_update": SAVED_PHRASE,
+    "instance_stop": DIRECT_PHRASE,
+    "instances_stop_all": DIRECT_PHRASE,
+    "reload_instance": DIRECT_PHRASE,
+    "reload_instances": DIRECT_PHRASE,
+    "jobs_run": QUEUED_PHRASE,  # jobs.py:18-31 sets plugin change flags.
+    "ban_ip": DIRECT_PHRASE,  # bans.py:64 calls /ban on the instances.
+    "unban_ip": DIRECT_PHRASE,  # bans.py:235 calls /unban on the instances.
+    "cache_delete_bulk": QUEUED_PHRASE,  # cache.py:147-160 deletes rows and sets flags.
+    "cache_delete_file": QUEUED_PHRASE,  # cache.py:199-200 uses the same flagged deletion.
+    "plugins_upload": SAVED_PHRASE,  # plugins.py:227,280 stores plugin data in the DB.
+    "plugin_delete": SAVED_PHRASE,  # plugins.py:134 deletes from the DB with changes=True.
+    "instance_create": SAVED_PHRASE,  # instances.py:162 adds a DB instance record.
+    "instance_update": SAVED_PHRASE,  # instances.py:225 updates DB instance fields.
+    "instance_delete": SAVED_PHRASE,  # instances.py:257 deletes a DB instance record.
+    "instances_delete_bulk": SAVED_PHRASE,  # instances.py:299 deletes DB instance records.
+}
+
+
+def test_write_descriptions_state_timing() -> None:
+    phrases = (SAVED_PHRASE, DIRECT_PHRASE, QUEUED_PHRASE)
+    assert set(WRITE_TIMING) == {
+        name for name, effect in TOOL_EFFECTS.items() if not effect.read_only
+    } - {"authenticate"}
+    for name, description in TOOL_DESCRIPTIONS.items():
+        if name in WRITE_TIMING:
+            assert WRITE_TIMING[name] in description, name
+            assert sum(description.count(phrase) for phrase in phrases) == 1, name
+        else:
+            assert not any(phrase in description for phrase in phrases), name
+    assert TOOL_DESCRIPTIONS["authenticate"] == (
+        "Returns a new BunkerWeb API token; changes nothing in the BunkerWeb configuration."
+    )
+
+
+def test_descriptions_are_short() -> None:
+    for name, description in TOOL_DESCRIPTIONS.items():
+        assert len(description) <= 240, name
+
+
+def test_reload_test_is_not_described_as_dry_run() -> None:
+    description = ReloadParams.model_fields["test"].description
+    assert description is not None
+    assert "validation-only" not in description
+    assert "still reloads" in description
+
+
+def test_prompts_do_not_claim_automatic_application() -> None:
+    phrase = "BunkerWeb will automatically apply the changes."
+    prompts = load_catalog(Settings()).descriptors()
+    assert prompts
+    for name, prompt in prompts.items():
+        assert phrase not in prompt, name
 
 
 def test_every_tool_has_an_effect() -> None:
