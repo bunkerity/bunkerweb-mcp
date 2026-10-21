@@ -1,0 +1,35 @@
+AGENTS.md
+  s_2136771acb44a9::t_e79de68d176d50 42,74-78
+docs/adr/0006-tool-effects-and-read-only-mode.md
+  s_2136771acb44a9::t_e79de68d176d50 1-62,64-83,90-116,120-125
+  s_7e1b7ad15af006::t_fd55eac1acd1f1 63,84-89,117-119
+docs/adr/README.md
+  s_2136771acb44a9::t_e79de68d176d50 29
+README.md
+  s_2136771acb44a9::t_e79de68d176d50 172,176,195-207,210-216
+  s_7e1b7ad15af006::t_fd55eac1acd1f1 208-209
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e8f9ecc0296653d950cd49f4bf255f5d551661b7",
+  "prompts": {},
+  "sessions": {
+    "s_2136771acb44a9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a159f5-29c2-7ad2-b410-08d2a1ec24d7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    },
+    "s_7e1b7ad15af006": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a159ff-4bd9-79c1-8757-ce3ca04f48b2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
