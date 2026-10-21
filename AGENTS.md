@@ -39,7 +39,7 @@ are in `deploy/` and the root Compose files; n8n examples are in `n8n-workflows/
 
 ## What the server exposes
 
-- **Tools** (43 by default, from `TOOL_DESCRIPTIONS`): core (`authenticate`, `ping`, `health`), instances,
+- **Tools** (44 by default, from `TOOL_DESCRIPTIONS`): core (`authenticate`, `ping`, `health`, `diagnose`), instances,
   bans, services, global config, custom configs, plugins, cache and jobs. `logs_list` and
   `logs_read` register only when `BUNKERWEB_LOGS_PATH` is set. `search_bunkerweb_docs`
   registers only when `SEARCH_MODE=remote`.
@@ -71,9 +71,11 @@ the Compose files set `disabled`.
 
 Token comparison goes through `_token_matches` (constant time, bytes). `BUNKERWEB_API_TOKEN` or
 Basic credentials authenticate the server to BunkerWeb, not clients to the server; a bearer
-token wins over Basic. The server has no per-client roles or read-only mode, and several tools
-change or delete BunkerWeb state (`delete_service`, `instance_stop`, `plugins_upload`,
-`unban_ip`, ...). Keep that in mind when adding tools or changing authentication.
+token wins over Basic. The server has no per-client roles. `MCP_READ_ONLY` (default `false`)
+keeps only read tools on every transport; it also removes `authenticate`, which returns a
+credential. With writes enabled, several tools change or delete BunkerWeb state
+(`delete_service`, `instance_stop`, `plugins_upload`, `unban_ip`, ...). Keep that in mind when
+adding tools or changing authentication.
 
 `BUNKERWEB_REDACT_SECRETS` masks by setting name in registry tool results and withholds upstream error details; logs, custom config text and docs search are outside it (`docs/security.md`, "Secret Redaction"). Build any API path from `client._segment`, never a raw f-string.
 

@@ -169,11 +169,11 @@ otherwise the server registers `search_bunkerweb_docs` and readiness checks the 
 ## Tools and resources
 
 Read `GET /tools` for the running server's tool names, descriptions, and input
-schemas. The [registry](src/bunkerweb_mcp/tools/registry.py) defines 43 API tools:
+schemas. The [registry](src/bunkerweb_mcp/tools/registry.py) defines 44 API tools:
 
 | Group | Tools |
 | --- | --- |
-| Authentication and probes | `authenticate`, `ping`, `health` |
+| Authentication and probes | `authenticate`, `ping`, `health`, `diagnose` |
 | Instances | `list_instances`, `instance_get`, `instance_create`, `instance_update`, `instance_delete`, `instances_delete_bulk`, `instance_ping`, `instances_ping_all`, `instance_stop`, `instances_stop_all`, `reload_instance`, `reload_instances` |
 | Bans | `list_bans`, `ban_ip`, `unban_ip` |
 | Services | `list_services`, `get_service`, `create_service`, `update_service`, `delete_service`, `convert_service` |
@@ -191,6 +191,28 @@ Optional tools:
   cursors for older history. Compressed `.gz` rotations are excluded. Treat log
   content as untrusted data.
 - `search_bunkerweb_docs`: registers in remote search mode.
+
+Use `diagnose` to check the connected API's host, reachability, authentication, version,
+`MULTISITE`, and instance counts. Pass `service` to inspect its existence, draft state,
+and setting-owner counts. An unknown version appears as
+`unknown (strictest rules applied)`.
+
+`update_service` checks setting names and ownership before sending changes. It refuses
+the request if validation reads fail or `MULTISITE` is not `yes`. It skips invalid or
+externally owned keys and unsupported renames; if nothing remains, it sends no write.
+After an accepted write, it reads the service back without the result cache. The result
+adds `summary` as its first field and a `receipt` with `db` (`verified`, `partial`, or
+`unverified`), plus `issues` and `hints` when needed. These report names and reasons,
+without setting values. For example, a complete match reads
+`DB VERIFIED (2/2 MATCH). LIVE UNVERIFIED.` A failed read-back reads
+`WRITE ACCEPTED. DB UNVERIFIED. LIVE UNVERIFIED.` A draft adds `DRAFT: NOT PUBLISHED.`
+The summary always ends `LIVE UNVERIFIED.` BunkerWeb 1.6 offers no live-state signal;
+the receipt does not prove that instances use the saved configuration.
+
+Tool metadata identifies reads and destructive writes. `MCP_READ_ONLY=true` removes
+write tools and their prompts on every transport, including `authenticate`, which
+returns a credential. See [ADR 0006](docs/adr/0006-tool-effects-and-read-only-mode.md)
+for the version rules and enforcement boundary.
 
 The [MCP adapter](src/bunkerweb_mcp/mcp_adapter.py) also exposes read-only resources:
 
