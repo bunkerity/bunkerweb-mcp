@@ -375,8 +375,11 @@ async def test_tools_endpoint_returns_descriptors(app) -> None:
 
 
 @pytest.mark.asyncio
-async def test_tools_endpoint_lists_sdk_tool_schema() -> None:
-    settings = Settings(SEARCH_MODE="remote", SEARCH_API_URL="http://search.invalid")
+@pytest.mark.parametrize("read_only", [False, True])
+async def test_tools_endpoint_lists_sdk_tool_schema(read_only: bool) -> None:
+    settings = Settings(
+        SEARCH_MODE="remote", SEARCH_API_URL="http://search.invalid", MCP_READ_ONLY=read_only
+    )
     with (
         patch("bunkerweb_mcp.main.get_settings", return_value=settings),
         patch("bunkerweb_mcp.main.BunkerWebClient", return_value=DummyClient()),
@@ -396,7 +399,11 @@ async def test_tools_endpoint_lists_sdk_tool_schema() -> None:
 
     assert response.status_code == 200
     tool = next(item for item in response.json() if item["name"] == "search_bunkerweb_docs")
-    assert set(tool) == {"name", "description", "input_schema"}
+    assert set(tool) == {"name", "description", "input_schema", "read_only", "destructive"}
+    assert tool["read_only"] is True
+    assert tool["destructive"] is False
+    if read_only:
+        assert all(item["read_only"] for item in response.json())
     assert tool["input_schema"] == {
         "properties": {
             "query": {"title": "Query", "type": "string"},

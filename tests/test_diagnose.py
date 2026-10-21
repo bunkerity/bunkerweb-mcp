@@ -145,7 +145,28 @@ async def test_diagnose_independent_failures() -> None:
     assert result["api"]["reachable"] is False
     assert result["multisite"] is None
     assert result["instances"] == {"total": 2, "up": 1}
-    assert result["service"] == {"exists": False, "draft": None, "owners": {}}
+    assert result["service"] == {"exists": False, "draft": None, "owners": None}
+    assert "secret" not in json.dumps(result)
+
+
+@pytest.mark.parametrize(
+    ("error", "exists"),
+    [
+        (BunkerWebError("secret", status=404), False),
+        (BunkerWebError("secret", status=503), None),
+        (BunkerWebError("secret", status=401), None),
+        (BunkerWebError("secret", status=403), None),
+        (TimeoutError("secret"), None),
+        (ValueError("secret"), None),
+    ],
+)
+async def test_diagnose_service_existence_on_read_failure(
+    error: Exception, exists: bool | None
+) -> None:
+    client = _client()
+    client.get_service.side_effect = error
+    result = await handle_diagnose(client, DiagnoseParams(service="example.com"))
+    assert result["service"] == {"exists": exists, "draft": None, "owners": None}
     assert "secret" not in json.dumps(result)
 
 

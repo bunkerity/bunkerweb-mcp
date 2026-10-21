@@ -60,7 +60,7 @@ The adapter also omits prompts for removed tools. This covers HTTP MCP, stdio,
 
 Before `update_service`, the handler reads global settings and the service without
 the result cache. For requested variables, it validates names against the plugin
-setting catalog. It refuses the whole request when a required validation read
+setting catalogue. It refuses the whole request when a required validation read
 fails or has an unexpected shape, when the service does not exist, or when
 `MULTISITE` is not `yes`.
 
@@ -81,10 +81,12 @@ and `hints` when needed. Existing response keys follow. The database outcomes ar
 | `partial` | `DB PARTIAL (2/3 MATCH, 1 SKIPPED). LIVE UNVERIFIED.` |
 | `unverified` | `WRITE ACCEPTED. DB UNVERIFIED. LIVE UNVERIFIED.` |
 
-Counts include skipped requested fields, `server_name`, and `is_draft`. A draft
-adds `DRAFT: NOT PUBLISHED.` before `LIVE UNVERIFIED.` and a draft issue, without
-changing the database outcome. Issues and hints contain setting names and reasons,
-without setting values. A failed read-back does not trigger another PATCH.
+Counts include skipped requested fields, `server_name`, and `is_draft`. Only a
+read-back that confirms a draft adds `DRAFT: NOT PUBLISHED.` before
+`LIVE UNVERIFIED.` and a draft issue, without changing the database outcome.
+Issues and hints contain setting names and reasons, without setting values. A
+failed read-back returns the unverified receipt without the draft marker and does
+not trigger another PATCH.
 The summary always ends `LIVE UNVERIFIED.`
 
 `diagnose` reports the API host and port without credentials, reachability,
@@ -112,8 +114,9 @@ as `unknown (strictest rules applied)`. It cannot check live configuration.
 
 - `/rpc` falls back to the SDK tool manager only for tools the adapter registered.
   Future tools outside `Tools` must preserve this read-only boundary.
-- Version and setting-catalog caches last 600 seconds per upstream base URL.
-  Plugin uploads and deletions invalidate the catalog, including uncertain outcomes.
+- Discovered versions and setting catalogues are cached for 600 seconds per upstream
+  base URL. Unknown versions are cached for 30 seconds before discovery is retried.
+  Plugin uploads and deletions invalidate the catalogue, including uncertain outcomes.
 - Receipts cover `update_service`. Other writes retain their own response formats.
 - Read-only mode is server-wide. It does not provide per-client roles or replace
   client authentication.

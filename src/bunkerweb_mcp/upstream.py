@@ -29,6 +29,7 @@ class CatalogUnavailable(Exception):  # noqa: N818 - public interface consumed b
 
 
 _TTL = 600
+_UNKNOWN_TTL = 30
 _versions: dict[str, tuple[float, UpstreamVersion | None]] = {}
 _catalogs: dict[str, tuple[float, dict[str, SettingInfo]]] = {}
 _catalog_generation = 0
@@ -55,7 +56,8 @@ async def get_upstream_version(client: BunkerWebClientProtocol) -> UpstreamVersi
         version = parse_version(await client.get_openapi_version())
     except Exception:
         version = None
-    _versions[client.base_url] = (time.monotonic() + _TTL, version)
+    ttl = _UNKNOWN_TTL if version is None else _TTL
+    _versions[client.base_url] = (time.monotonic() + ttl, version)
     return version
 
 

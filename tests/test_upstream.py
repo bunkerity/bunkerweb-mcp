@@ -75,13 +75,24 @@ def test_rename_supported_cutoff() -> None:
 
 
 @pytest.mark.asyncio
-async def test_version_unknown_when_openapi_missing() -> None:
+async def test_version_unknown_when_openapi_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    now = 100.0
+    monkeypatch.setattr(upstream.time, "monotonic", lambda: now)
     client = SimpleNamespace(
         base_url="http://one", get_openapi_version=AsyncMock(return_value=None)
     )
     assert await get_upstream_version(client) is None
+    client.get_openapi_version.return_value = "1.6.17"
+    now += 29
     assert await get_upstream_version(client) is None
     client.get_openapi_version.assert_awaited_once()
+    now += 1
+    assert await get_upstream_version(client) == UpstreamVersion(1, 6, 17)
+    assert client.get_openapi_version.await_count == 2
+    now += 599
+    client.get_openapi_version.return_value = "1.6.14"
+    assert await get_upstream_version(client) == UpstreamVersion(1, 6, 17)
+    assert client.get_openapi_version.await_count == 2
 
 
 @pytest.mark.asyncio

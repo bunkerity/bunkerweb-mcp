@@ -196,8 +196,14 @@ async def build_receipt(
         entry = service.get(stored_key)
         if stored_key in service and str(_value(entry)) == requested:
             matched += 1
-        elif isinstance(entry, dict) and not api_can_replace(entry.get("method", ""), version):
-            issues[key] = f"owned:{entry.get('method', '')}"
+        elif (
+            isinstance(entry, dict)
+            and entry.get("global") is False
+            and isinstance(method := entry.get("method"), str)
+            and method not in {"", "default"}
+            and not api_can_replace(method, version)
+        ):
+            issues[key] = f"owned:{method}"
         else:
             issues[key] = "not_matched"
 

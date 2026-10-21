@@ -37,6 +37,7 @@ from .prompt_catalog import load_catalog
 from .rate_limiter import WebSocketRateLimiter
 from .redaction import policy_from_settings
 from .tools import Tools
+from .tools.registry import effect_for
 from .tracing import setup_tracing
 from .utils.logging import configure_logging
 
@@ -168,6 +169,7 @@ def create_app() -> FastAPI:
             tool_name = tool.name
             # Skip if already in the list (avoid duplicates)
             if not any(t.get("name") == tool_name for t in tool_list):
+                effect = effect_for(tool_name)
                 tool_list.append(
                     {
                         "name": tool_name,
@@ -175,6 +177,8 @@ def create_app() -> FastAPI:
                         "input_schema": tool.input_schema
                         if isinstance(tool.input_schema, dict)
                         else {},
+                        "read_only": effect.read_only,
+                        "destructive": effect.destructive,
                     }
                 )
 

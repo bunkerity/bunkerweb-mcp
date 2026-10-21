@@ -338,6 +338,27 @@ async def test_older_api_silent_skip_is_partial(method: str, code: str) -> None:
     assert result["receipt"]["issues"] == {"USE_MODSECURITY": code}
 
 
+@pytest.mark.parametrize(
+    "entry",
+    [
+        {"value": "no"},
+        {"value": "no", "global": False},
+        {"value": "no", "global": False, "method": ""},
+        _row("no", "default"),
+        _row("no", "scheduler", True),
+        {"value": "no", "method": "scheduler"},
+    ],
+)
+async def test_readback_without_explicit_owner_is_not_matched(entry: dict[str, Any]) -> None:
+    client = _client(after=_config(USE_MODSECURITY=entry))
+    result = await _update(client, variables={"USE_MODSECURITY": "yes"})
+    assert result["summary"] == "DB PARTIAL (0/1 MATCH). LIVE UNVERIFIED."
+    assert result["receipt"]["issues"] == {"USE_MODSECURITY": "not_matched"}
+    assert result["receipt"]["hints"] == {
+        "not_matched": "Sent, but the database does not show the requested value."
+    }
+
+
 async def test_receipt_has_no_setting_values() -> None:
     client = _client(after=_config())
     result = await _update(client, variables={"USE_MODSECURITY": "private-requested-value"})

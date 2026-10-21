@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlsplit
 
+from ..exceptions import BunkerWebError
 from ..upstream import parse_version
 
 if TYPE_CHECKING:
@@ -66,7 +67,7 @@ async def handle_diagnose(
 
     service: dict[str, Any] | None = None
     if params.service is not None:
-        service = {"exists": False, "draft": None, "owners": {}}
+        service = {"exists": None, "draft": None, "owners": None}
         try:
             settings = (
                 await client.get_service(params.service, full=True, methods=True, with_drafts=True)
@@ -85,6 +86,9 @@ async def handle_diagnose(
                 "draft": draft == "yes" if draft in ("yes", "no") else None,
                 "owners": owners,
             }
+        except BunkerWebError as exc:
+            if exc.status == 404:
+                service["exists"] = False
         except Exception:
             pass
 

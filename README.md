@@ -205,7 +205,8 @@ adds `summary` as its first field and a `receipt` with `db` (`verified`, `partia
 `unverified`), plus `issues` and `hints` when needed. These report names and reasons,
 without setting values. For example, a complete match reads
 `DB VERIFIED (2/2 MATCH). LIVE UNVERIFIED.` A failed read-back reads
-`WRITE ACCEPTED. DB UNVERIFIED. LIVE UNVERIFIED.` A draft adds `DRAFT: NOT PUBLISHED.`
+`WRITE ACCEPTED. DB UNVERIFIED. LIVE UNVERIFIED.` Only a read-back that confirms a
+draft adds `DRAFT: NOT PUBLISHED.` A failed read-back omits the draft marker.
 The summary always ends `LIVE UNVERIFIED.` BunkerWeb 1.6 offers no live-state signal;
 the receipt does not prove that instances use the saved configuration.
 
