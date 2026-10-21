@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Iterable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+from mcp.types import ToolAnnotations
 
 from ..exceptions import BunkerWebError, ToolExecutionError, ToolValidationError
 from ..redaction import withheld_error
@@ -110,6 +113,72 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     "logs_list": "List readable BunkerWeb runtime log sources.",
     "logs_read": "Read bounded recent lines from a BunkerWeb runtime log.",
 }
+
+
+@dataclass(frozen=True)
+class ToolEffect:
+    read_only: bool
+    destructive: bool
+
+    def annotations(self) -> ToolAnnotations:
+        if self.read_only:
+            return ToolAnnotations(read_only_hint=True)
+        return ToolAnnotations(read_only_hint=False, destructive_hint=self.destructive)
+
+
+TOOL_EFFECTS: dict[str, ToolEffect] = {
+    "ping": ToolEffect(read_only=True, destructive=False),
+    "health": ToolEffect(read_only=True, destructive=False),
+    "list_instances": ToolEffect(read_only=True, destructive=False),
+    "instances_ping_all": ToolEffect(read_only=True, destructive=False),
+    "instance_get": ToolEffect(read_only=True, destructive=False),
+    "instance_ping": ToolEffect(read_only=True, destructive=False),
+    "list_bans": ToolEffect(read_only=True, destructive=False),
+    "list_services": ToolEffect(read_only=True, destructive=False),
+    "get_service": ToolEffect(read_only=True, destructive=False),
+    "global_config_read": ToolEffect(read_only=True, destructive=False),
+    "configs_list": ToolEffect(read_only=True, destructive=False),
+    "config_get": ToolEffect(read_only=True, destructive=False),
+    "plugins_list": ToolEffect(read_only=True, destructive=False),
+    "cache_list": ToolEffect(read_only=True, destructive=False),
+    "cache_fetch_file": ToolEffect(read_only=True, destructive=False),
+    "jobs_list": ToolEffect(read_only=True, destructive=False),
+    "logs_list": ToolEffect(read_only=True, destructive=False),
+    "logs_read": ToolEffect(read_only=True, destructive=False),
+    "search_bunkerweb_docs": ToolEffect(read_only=True, destructive=False),
+    "diagnose": ToolEffect(read_only=True, destructive=False),
+    "authenticate": ToolEffect(read_only=False, destructive=False),
+    "instance_create": ToolEffect(read_only=False, destructive=False),
+    "ban_ip": ToolEffect(read_only=False, destructive=False),
+    "create_service": ToolEffect(read_only=False, destructive=False),
+    "jobs_run": ToolEffect(read_only=False, destructive=False),
+    "config_create": ToolEffect(read_only=False, destructive=True),
+    "configs_upload": ToolEffect(read_only=False, destructive=True),
+    "instances_stop_all": ToolEffect(read_only=False, destructive=True),
+    "instance_stop": ToolEffect(read_only=False, destructive=True),
+    "instance_update": ToolEffect(read_only=False, destructive=True),
+    "instances_delete_bulk": ToolEffect(read_only=False, destructive=True),
+    "instance_delete": ToolEffect(read_only=False, destructive=True),
+    "reload_instances": ToolEffect(read_only=False, destructive=True),
+    "reload_instance": ToolEffect(read_only=False, destructive=True),
+    "unban_ip": ToolEffect(read_only=False, destructive=True),
+    "update_service": ToolEffect(read_only=False, destructive=True),
+    "delete_service": ToolEffect(read_only=False, destructive=True),
+    "convert_service": ToolEffect(read_only=False, destructive=True),
+    "global_config_update": ToolEffect(read_only=False, destructive=True),
+    "config_update": ToolEffect(read_only=False, destructive=True),
+    "config_delete": ToolEffect(read_only=False, destructive=True),
+    "configs_delete_bulk": ToolEffect(read_only=False, destructive=True),
+    "config_upload_update": ToolEffect(read_only=False, destructive=True),
+    "plugins_upload": ToolEffect(read_only=False, destructive=True),
+    "plugin_delete": ToolEffect(read_only=False, destructive=True),
+    "cache_delete_bulk": ToolEffect(read_only=False, destructive=True),
+    "cache_delete_file": ToolEffect(read_only=False, destructive=True),
+}
+
+
+def effect_for(name: str) -> ToolEffect:
+    return TOOL_EFFECTS.get(name, ToolEffect(read_only=False, destructive=True))
 
 
 class Tools:
@@ -316,10 +385,13 @@ class Tools:
         """Return JSON-serializable metadata describing available tools."""
         descriptors: list[dict[str, Any]] = []
         for name, (model, _) in self._registry.items():
+            effect = effect_for(name)
             entry = {
                 "name": name,
                 "description": TOOL_DESCRIPTIONS[name],
                 "input_schema": model.model_json_schema(),
+                "read_only": effect.read_only,
+                "destructive": effect.destructive,
             }
             prompt = self._prompt_catalog.get(name)
             if prompt:

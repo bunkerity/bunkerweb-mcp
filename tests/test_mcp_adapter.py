@@ -1,5 +1,6 @@
 """Tests for MCP adapter module."""
 
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -12,6 +13,22 @@ from bunkerweb_mcp.mcp_adapter import (
 )
 from bunkerweb_mcp.search_client import SearchClient
 from bunkerweb_mcp.skill_catalog import SKILL_URI_PREFIX, load_skills
+from bunkerweb_mcp.tools import Tools
+
+
+@pytest.mark.asyncio
+async def test_registered_tools_carry_annotations() -> None:
+    settings = Settings(bunkerweb_base_url="http://test:8888", SEARCH_MODE="remote")
+    server = create_fastmcp_server(settings, Tools(SimpleNamespace()))  # type: ignore[arg-type]
+    by_name = {tool.name: tool for tool in await server.list_tools()}
+
+    assert by_name["get_service"].annotations.read_only_hint is True
+    assert by_name["create_service"].annotations.read_only_hint is False
+    assert by_name["create_service"].annotations.destructive_hint is False
+    for name in ("update_service", "config_create", "configs_upload"):
+        assert by_name[name].annotations.destructive_hint is True
+    assert by_name["search_bunkerweb_docs"].annotations.read_only_hint is True
+    assert all(tool.annotations.idempotent_hint is None for tool in by_name.values())
 
 
 class StubFieldInfo:

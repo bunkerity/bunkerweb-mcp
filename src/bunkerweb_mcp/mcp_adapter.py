@@ -19,6 +19,7 @@ from .config import Settings
 from .exceptions import BunkerWebError, ToolExecutionError, ToolValidationError
 from .skill_catalog import SKILL_URI_PREFIX, SkillEntry, load_skills
 from .tools import Tools
+from .tools.registry import effect_for
 
 ToolHandler = Callable[[BaseModel], Awaitable[dict[str, Any]]]
 
@@ -91,7 +92,13 @@ def create_fastmcp_server(settings: Settings, tools: Tools) -> MCPServer:
             description=description,
             handler=handler,
         )
-        server.add_tool(tool_fn, name=name, description=description, structured_output=False)
+        server.add_tool(
+            tool_fn,
+            name=name,
+            description=description,
+            annotations=effect_for(name).annotations(),
+            structured_output=False,
+        )
         if prompt_text:
             prompt_fn = _build_prompt_callable(name, prompt_text)
             server.add_prompt(
@@ -341,6 +348,7 @@ def _register_search_tool(server: MCPServer, settings: Settings) -> None:
         search_bunkerweb_docs,
         name="search_bunkerweb_docs",
         description="Semantic search across BunkerWeb documentation using AI embeddings (via remote API)",
+        annotations=effect_for("search_bunkerweb_docs").annotations(),
     )
 
     logger.info("Registered search_bunkerweb_docs tool (remote mode)")

@@ -31,6 +31,27 @@ from bunkerweb_mcp.schemas.services import (
     ServicesResponse,
 )
 from bunkerweb_mcp.tools import Tools
+from bunkerweb_mcp.tools.registry import TOOL_DESCRIPTIONS, TOOL_EFFECTS, ToolEffect, effect_for
+
+
+def test_every_tool_has_an_effect() -> None:
+    names = set(TOOL_DESCRIPTIONS) | {"search_bunkerweb_docs", "diagnose"}
+    assert names == set(TOOL_EFFECTS)
+
+
+def test_unknown_tool_is_treated_as_destructive_write() -> None:
+    assert effect_for("not_a_tool") == ToolEffect(read_only=False, destructive=True)
+
+
+def test_reload_is_a_destructive_write() -> None:
+    assert TOOL_EFFECTS["reload_instances"] == ToolEffect(read_only=False, destructive=True)
+
+
+def test_descriptors_carry_effects() -> None:
+    by_name = {d["name"]: d for d in Tools(SimpleNamespace()).list_descriptors()}  # type: ignore[arg-type]
+    assert by_name["get_service"]["read_only"] is True
+    assert by_name["delete_service"]["destructive"] is True
+
 
 SERVICE_CONFIG_PAYLOAD = {
     "SERVER_NAME": {
