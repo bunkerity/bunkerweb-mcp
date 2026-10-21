@@ -196,6 +196,10 @@ class EmptyParams(_BaseToolParams):
     """Placeholder for tools without parameters."""
 
 
+class DiagnoseParams(_BaseToolParams):
+    service: str | None = None
+
+
 class ReloadParams(_BaseToolParams):
     test: bool = Field(True, description="Run the reload in validation-only mode")
 

@@ -16,6 +16,7 @@ from . import (
     cache_handlers,
     config_handlers,
     core_handlers,
+    diagnose_handlers,
     instance_handlers,
     job_handlers,
     log_handlers,
@@ -38,6 +39,7 @@ from .params import (
     ConfigUploadParams,
     ConfigUploadUpdateParams,
     DeleteServiceParams,
+    DiagnoseParams,
     EmptyParams,
     GetServiceParams,
     GlobalConfigReadParams,
@@ -70,6 +72,7 @@ TOOL_DESCRIPTIONS: dict[str, str] = {
     "authenticate": "Authenticate against /auth to obtain a Biscuit token.",
     "ping": "Check if the BunkerWeb API is reachable.",
     "health": "Retrieve the lightweight health probe from the API.",
+    "diagnose": "Read-only check of the connected BunkerWeb: reachability, authentication, version, MULTISITE, instances, and optionally who owns a service's settings.",
     "list_instances": "List registered BunkerWeb instances.",
     "instances_ping_all": "Ping all registered instances.",
     "instances_stop_all": "Stop all registered instances.",
@@ -203,6 +206,7 @@ class Tools:
             "authenticate": (AuthParams, self._wrap(core_handlers.handle_authenticate)),
             "ping": (EmptyParams, self._wrap(core_handlers.handle_ping)),
             "health": (EmptyParams, self._wrap(core_handlers.handle_health)),
+            "diagnose": (DiagnoseParams, self._wrap(diagnose_handlers.handle_diagnose)),
             # Instance handlers
             "list_instances": (EmptyParams, self._wrap(instance_handlers.handle_list_instances)),
             "instances_ping_all": (
