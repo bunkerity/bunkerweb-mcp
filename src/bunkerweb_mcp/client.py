@@ -129,6 +129,19 @@ class BunkerWebClient:
     def client(self) -> httpx.AsyncClient:
         return self._client
 
+    @property
+    def base_url(self) -> str:
+        return str(self._settings.bunkerweb_base_url).rstrip("/")
+
+    async def get_openapi_version(self) -> str | None:
+        """Discover the version when the deployment exposes its OpenAPI document."""
+        try:
+            response = await self._request("GET", "/openapi.json")
+            version = response.json()["info"]["version"]
+            return version if isinstance(version, str) else None
+        except Exception:
+            return None
+
     async def close(self) -> None:
         await self._client.aclose()
 
@@ -409,12 +422,22 @@ class BunkerWebClient:
             "full": str(full).lower(),
             "methods": str(methods).lower(),
         }
-        return await self._request_json(
-            "GET",
-            "/global_settings",
-            params=params,
-            response_model=GlobalConfigResponse,
-        )
+        try:
+            return await self._request_json(
+                "GET",
+                "/global_settings",
+                params=params,
+                response_model=GlobalConfigResponse,
+            )
+        except BunkerWebError as exc:
+            if exc.status != HTTPStatus.NOT_FOUND:
+                raise
+            return await self._request_json(
+                "GET",
+                "/global_config",
+                params=params,
+                response_model=GlobalConfigResponse,
+            )
 
     async def update_global_config(self, payload: dict[str, Any]) -> GlobalConfigResponse:
         validated = GlobalConfigUpdate.model_validate(payload)

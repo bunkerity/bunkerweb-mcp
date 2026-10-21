@@ -20,12 +20,18 @@ if TYPE_CHECKING:
         InstanceUpdateRequest,
     )
     from ..schemas.jobs import RunJobsRequest
+    from ..schemas.plugins import PluginsResponse
     from ..schemas.services import ServiceResponse, ServicesResponse
 
 
 @runtime_checkable
 class BunkerWebClientProtocol(Protocol):
     """Protocol defining the interface for BunkerWeb API client."""
+
+    @property
+    def base_url(self) -> str: ...
+
+    async def get_openapi_version(self) -> str | None: ...
 
     async def authenticate(
         self,
@@ -134,7 +140,7 @@ class BunkerWebClientProtocol(Protocol):
         new_is_draft: bool | None,
     ) -> ApiResponse: ...
 
-    async def list_plugins(self, *, plugin_type: str, with_data: bool) -> ApiResponse: ...
+    async def list_plugins(self, *, plugin_type: str, with_data: bool) -> PluginsResponse: ...
 
     async def upload_plugins(
         self, *, files: list[tuple[str, bytes]], method: str

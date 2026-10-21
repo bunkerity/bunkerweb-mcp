@@ -44,6 +44,104 @@ def _make_settings() -> Settings:
 
 
 @pytest.mark.asyncio
+async def test_read_global_config_falls_back_to_global_config_on_404() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path == "/global_settings":
+            return httpx.Response(404, json={"detail": "Not found"})
+        return httpx.Response(200, json={"config": {"USE_MODSECURITY": "yes"}})
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://testserver"
+    ) as async_client:
+        client = BunkerWebClient(_make_settings(), client=async_client)
+        result = await client.read_global_config(full=True, methods=True)
+    assert result.data == {"USE_MODSECURITY": "yes"}
+    assert [request.url.path for request in requests] == ["/global_settings", "/global_config"]
+    assert all(
+        dict(request.url.params) == {"full": "true", "methods": "true"} for request in requests
+    )
+
+
+@pytest.mark.asyncio
+async def test_read_global_config_does_not_fall_back_on_other_errors() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(403, json={"detail": "Forbidden"})
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://testserver"
+    ) as async_client:
+        client = BunkerWebClient(_make_settings(), client=async_client)
+        with pytest.raises(BunkerWebError) as caught:
+            await client.read_global_config()
+    assert caught.value.status == 403
+    assert len(requests) == 1
+
+
+@pytest.mark.asyncio
+async def test_get_openapi_version_returns_none_on_404() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "GET"
+        assert request.url.path == "/openapi.json"
+        return httpx.Response(404)
+
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(handler), base_url="http://testserver"
+    ) as async_client:
+        client = BunkerWebClient(_make_settings(), client=async_client)
+        assert await client.get_openapi_version() is None
+
+
+@pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        (b'{"info":{"version":"1.6.17"}}', "1.6.17"),
+        (b"not json", None),
+        (b"{}", None),
+        (b"[]", None),
+        (b'{"info":null}', None),
+        (b'{"info":{"version":17}}', None),
+    ],
+)
+@pytest.mark.asyncio
+async def test_get_openapi_version_validates_document(body: bytes, expected: str | None) -> None:
+    async with httpx.AsyncClient(
+        transport=httpx.MockTransport(lambda _: httpx.Response(200, content=body)),
+        base_url="http://testserver",
+    ) as async_client:
+        client = BunkerWebClient(_make_settings(), client=async_client)
+        assert await client.get_openapi_version() == expected
+
+
+@pytest.mark.asyncio
+async def test_get_openapi_version_swallows_transport_and_server_errors() -> None:
+    settings = _make_settings().model_copy(update={"max_retries": 1})
+
+    def offline(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("offline", request=request)
+
+    for handler in (offline, lambda _: httpx.Response(503)):
+        async with httpx.AsyncClient(
+            transport=httpx.MockTransport(handler), base_url="http://testserver"
+        ) as async_client:
+            client = BunkerWebClient(settings, client=async_client)
+            assert await client.get_openapi_version() is None
+
+
+@pytest.mark.asyncio
+async def test_base_url_uses_configured_url_without_trailing_slash() -> None:
+    settings = Settings(BUNKERWEB_BASE_URL="http://configured:8888/api/")
+    async with httpx.AsyncClient(base_url="http://injected") as async_client:
+        client = BunkerWebClient(settings, client=async_client)
+        assert client.base_url == "http://configured:8888/api"
+
+
+@pytest.mark.asyncio
 async def test_client_uses_basic_auth_when_configured() -> None:
     settings = Settings.model_validate(
         {

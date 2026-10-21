@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
+from ..upstream import invalidate_setting_catalog
+
 if TYPE_CHECKING:
     from .params import (
         BunkerWebClientProtocol,
@@ -33,7 +35,10 @@ async def handle_upload_plugins(
 ) -> dict[str, Any]:
     """Upload and install plugins from archives."""
     files = [item.to_bytes() for item in params.files]
-    response = await client.upload_plugins(files=files, method=params.method)
+    try:
+        response = await client.upload_plugins(files=files, method=params.method)
+    finally:
+        invalidate_setting_catalog()
     return _serialize_response(response)
 
 
@@ -41,5 +46,8 @@ async def handle_delete_plugin(
     client: BunkerWebClientProtocol, params: PluginDeleteParams
 ) -> dict[str, Any]:
     """Delete an installed plugin."""
-    response = await client.delete_plugin(params.plugin_id)
+    try:
+        response = await client.delete_plugin(params.plugin_id)
+    finally:
+        invalidate_setting_catalog()
     return _serialize_response(response)
