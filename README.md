@@ -152,6 +152,7 @@ environment variables can override them. `unset` denotes an absent value or an e
 | `MCP_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Comma-separated MCP Host allowlist. Include the port variants clients send. |
 | `MCP_ALLOWED_ORIGINS` | `unset` | Comma-separated MCP Origin allowlist for browser clients. |
 | `MCP_ENABLE_SKILLS` | `true` | Serve bundled Agent Skills as `skill://bunkerweb/` resources. Set `false` to omit them. |
+| `MCP_READ_ONLY` | `false` | Register only read-only tools; write tools are not available on any transport. |
 | `RATE_LIMIT_ENABLED` | `false` | Enable rate limiting on endpoints. |
 | `RATE_LIMIT_TOOLS` | `30/minute` | Requests to `/tools` per client IP, when rate limiting is enabled. |
 | `RATE_LIMIT_RPC` | `100/minute` | Requests to `/rpc` per client IP, when rate limiting is enabled. |
@@ -228,7 +229,8 @@ Refresh with [scripts/sync_skills.py](scripts/sync_skills.py) `--ref <sha>`; CI 
 
 Tools can change configuration, stop instances, delete services, and install plugins.
 Grant access only to clients you trust with the configured BunkerWeb API credentials.
-The server does not provide per-client roles or read-only tool enforcement.
+Set `MCP_READ_ONLY=true` to serve only read tools on every transport. The server has no
+per-client roles.
 
 The HTTP application implements these shared-secret checks:
 

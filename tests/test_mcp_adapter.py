@@ -11,9 +11,33 @@ from bunkerweb_mcp.mcp_adapter import (
     _build_tool_callable,
     create_fastmcp_server,
 )
+from bunkerweb_mcp.prompt_catalog import PromptCatalog
 from bunkerweb_mcp.search_client import SearchClient
 from bunkerweb_mcp.skill_catalog import SKILL_URI_PREFIX, load_skills
 from bunkerweb_mcp.tools import Tools
+from bunkerweb_mcp.tools.registry import effect_for
+
+
+@pytest.mark.asyncio
+async def test_read_only_server_registers_no_write_tools_or_prompts() -> None:
+    settings = Settings(SEARCH_MODE="remote", MCP_ENABLE_SKILLS=False)
+    catalog = PromptCatalog(
+        {
+            "get_service": "Read a service",
+            "update_service": "Write a service",
+            "authenticate": "Auth",
+        }
+    )
+    tools = Tools(SimpleNamespace(), prompt_catalog=catalog, read_only=True)  # type: ignore[arg-type]
+    server = create_fastmcp_server(settings, tools)
+    registered = await server.list_tools()
+    names = {tool.name for tool in registered}
+    assert "get_service" in names
+    assert "search_bunkerweb_docs" in names
+    assert "update_service" not in names
+    assert "authenticate" not in names
+    assert all(effect_for(name).read_only for name in names)
+    assert {prompt.name for prompt in await server.list_prompts()} == {"get_service"}
 
 
 @pytest.mark.asyncio

@@ -127,6 +127,11 @@ class Settings(BaseSettings):
         description="Serve the bundled BunkerWeb Agent Skills as skill:// resources.",
         alias="MCP_ENABLE_SKILLS",
     )
+    read_only: bool = Field(
+        default=False,
+        description="Register only read-only tools; write tools are not available on any transport.",
+        alias="MCP_READ_ONLY",
+    )
 
     # Performance Settings (Sprint 2)
     rate_limit_enabled: bool = Field(

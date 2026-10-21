@@ -9,6 +9,22 @@ from bunkerweb_mcp.redaction import RedactionPolicy
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("read_only", [False, True])
+async def test_stdio_passes_read_only(read_only: bool) -> None:
+    with (
+        patch("bunkerweb_mcp.cli.get_settings") as mock_settings,
+        patch("bunkerweb_mcp.cli.configure_logging"),
+        patch("bunkerweb_mcp.cli.BunkerWebClient", return_value=AsyncMock()),
+        patch("bunkerweb_mcp.cli.load_catalog"),
+        patch("bunkerweb_mcp.cli.Tools") as mock_tools,
+        patch("bunkerweb_mcp.cli.create_fastmcp_server", return_value=AsyncMock()),
+    ):
+        mock_settings.return_value = MagicMock(read_only=read_only, redact_secrets=False)
+        await run_stdio()
+        assert mock_tools.call_args.kwargs["read_only"] is read_only
+
+
+@pytest.mark.asyncio
 async def test_run_stdio_initializes_components():
     """Test that run_stdio initializes all required components."""
     with (
@@ -185,6 +201,7 @@ async def test_run_stdio_passes_settings_to_components():
             bunkerweb_logs_path=None,
             redact_secrets=True,
             redact_pattern=None,
+            read_only=False,
         )
         mock_settings.return_value = test_settings
 
@@ -208,5 +225,6 @@ async def test_run_stdio_passes_settings_to_components():
             prompt_catalog=mock_catalog,
             logs_path=None,
             redaction=RedactionPolicy(),
+            read_only=False,
         )
         mock_create_server.assert_called_once_with(test_settings, mock_tools)

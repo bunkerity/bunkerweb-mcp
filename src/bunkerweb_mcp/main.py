@@ -73,6 +73,7 @@ def create_app() -> FastAPI:
         prompt_catalog=prompt_catalog,
         logs_path=logs_path,
         redaction=policy_from_settings(settings),
+        read_only=settings.read_only,
     )
     fastmcp_server = create_fastmcp_server(settings, tools)
 

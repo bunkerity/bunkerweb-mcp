@@ -190,6 +190,7 @@ class Tools:
         prompt_catalog: PromptCatalog | None = None,
         logs_path: Path | None = None,
         redaction: RedactionPolicy | None = None,
+        read_only: bool = False,
     ) -> None:
         self._client = client
         from ..prompt_catalog import PromptCatalog
@@ -349,6 +350,10 @@ class Tools:
             self._registry = {
                 name: (model, self._redact(name, handler, redaction))
                 for name, (model, handler) in self._registry.items()
+            }
+        if read_only:
+            self._registry = {
+                name: entry for name, entry in self._registry.items() if effect_for(name).read_only
             }
 
     def _wrap(

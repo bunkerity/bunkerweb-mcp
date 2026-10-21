@@ -53,6 +53,21 @@ def test_descriptors_carry_effects() -> None:
     assert by_name["delete_service"]["destructive"] is True
 
 
+def test_read_only_tools_drop_writes() -> None:
+    tools = Tools(SimpleNamespace(), read_only=True)  # type: ignore[arg-type]
+    assert tools.get_tool("get_service") is not None
+    assert tools.get_tool("update_service") is None
+    assert tools.get_tool("authenticate") is None
+    assert all(effect_for(d["name"]).read_only for d in tools.list_descriptors())
+
+
+def test_read_only_tools_drop_unclassified_tools(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delitem(TOOL_EFFECTS, "get_service")
+    tools = Tools(SimpleNamespace(), read_only=True)  # type: ignore[arg-type]
+    assert tools.get_tool("get_service") is None
+    assert tools.get_tool("list_services") is not None
+
+
 SERVICE_CONFIG_PAYLOAD = {
     "SERVER_NAME": {
         "value": "integration.api.test",

@@ -32,6 +32,7 @@ class StubSettings(SimpleNamespace):
     mcp_allowed_origins: str = "http://testserver"
     redact_secrets: bool = False
     redact_pattern: str | None = None
+    read_only: bool = False
 
     def get_websocket_token(self) -> str | None:
         """Get WebSocket token value for testing."""
@@ -152,7 +153,7 @@ def _build_stubbed_app(
     monkeypatch.setattr("bunkerweb_mcp.main.load_catalog", lambda settings: StubPromptCatalog())
 
     def tools_factory(
-        client: StubClient, prompt_catalog=None, logs_path=None, redaction=None
+        client: StubClient, prompt_catalog=None, logs_path=None, redaction=None, read_only=False
     ) -> StubTools:
         tools.client = client
         tools.redaction = redaction

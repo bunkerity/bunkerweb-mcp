@@ -291,6 +291,50 @@ def app():  # noqa: D401
 
 
 @pytest.mark.asyncio
+async def test_read_only_rpc_and_ws_refuse_writes(
+    monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
+) -> None:
+    monkeypatch.setenv("MCP_READ_ONLY", "true")
+    monkeypatch.setenv("SEARCH_MODE", "disabled")
+    with patch.object(
+        DummyClient,
+        "update_service",
+        new_callable=AsyncMock,
+        return_value=ServiceResponse(status="success"),
+    ) as update_service:
+        app = request.getfixturevalue("app")
+        payload = {
+            "id": "read-only",
+            "tool": "update_service",
+            "params": {"service": "integration.api.test", "variables": {"USE_REDIS": "yes"}},
+        }
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.post("/rpc", headers={"X-MCP-Token": "secret"}, json=payload)
+            assert response.status_code == 404
+            descriptors = (await client.get("/tools")).json()
+            assert "get_service" in {d["name"] for d in descriptors}
+            assert all(d["read_only"] for d in descriptors)
+            response = await client.post(
+                "/rpc",
+                headers={"X-MCP-Token": "secret"},
+                json={"tool": "ping", "params": {}},
+            )
+            assert response.status_code == 200
+            assert response.json()["result"]["message"] == "pong"
+
+        async with WebSocketSession(app, "/ws?token=secret") as ws:
+            await ws.send_json(payload)
+            message = await ws.receive_json()
+            assert message["error"]["code"] == "unknown_tool"
+            await ws.send_json({"tool": "ping", "params": {}})
+            message = await ws.receive_json()
+            assert message["result"]["message"] == "pong"
+        update_service.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_tools_endpoint_returns_descriptors(app) -> None:
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"

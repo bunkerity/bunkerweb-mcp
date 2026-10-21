@@ -30,6 +30,7 @@ async def run_stdio() -> None:
         prompt_catalog=prompt_catalog,
         logs_path=settings.bunkerweb_logs_path,
         redaction=policy_from_settings(settings),
+        read_only=settings.read_only,
     )
     server = create_fastmcp_server(settings, tools)
 
