@@ -33,9 +33,11 @@ from bunkerweb_mcp.redaction import (
 from bunkerweb_mcp.schemas.common import ApiResponse
 from bunkerweb_mcp.schemas.core import AuthResponse
 from bunkerweb_mcp.schemas.global_config import GlobalConfigResponse
+from bunkerweb_mcp.schemas.plugins import PluginsResponse
 from bunkerweb_mcp.schemas.services import ServiceResponse
 from bunkerweb_mcp.tools import Tools
 from bunkerweb_mcp.tools.params import ConfigUploadParams
+from bunkerweb_mcp.upstream import reset_upstream_state
 
 FAKE_SECRET = "fake-token-for-tests"
 
@@ -239,7 +241,9 @@ async def test_get_service_output_is_redacted() -> None:
 
 @pytest.mark.asyncio
 async def test_update_service_with_sensitive_key_is_refused() -> None:
-    client = SimpleNamespace(update_service=AsyncMock())
+    client = SimpleNamespace(
+        update_service=AsyncMock(), read_global_config=AsyncMock(), get_service=AsyncMock()
+    )
 
     with pytest.raises(ToolValidationError) as excinfo:
         await _call(
@@ -253,6 +257,36 @@ async def test_update_service_with_sensitive_key_is_refused() -> None:
     assert "LETS_ENCRYPT_DNS_CREDENTIAL_ITEM" in message
     assert FAKE_SECRET not in message
     client.update_service.assert_not_awaited()
+    client.read_global_config.assert_not_awaited()
+    client.get_service.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_receipt_codes_survive_redaction() -> None:
+    reset_upstream_state()
+    client = SimpleNamespace(
+        base_url="http://redaction-receipt",
+        read_global_config=AsyncMock(return_value=GlobalConfigResponse(data={"MULTISITE": "yes"})),
+        get_service=AsyncMock(return_value=ServiceResponse(data={"USE_ANTIBOT": _setting("no")})),
+        list_plugins=AsyncMock(
+            return_value=PluginsResponse(
+                data=[{"settings": {"USE_ANTIBOT": {"context": "multisite"}}}]
+            )
+        ),
+        get_openapi_version=AsyncMock(return_value="1.6.17"),
+        update_service=AsyncMock(return_value=ServiceResponse(status="success")),
+    )
+    result = await _call(
+        _tools(client),
+        "update_service",
+        {"service": "svc", "variables": {"UNKNOWN_SETTING": "yes", "USE_ANTIBOT": "no"}},
+    )
+    assert client.update_service.await_count == 1
+    assert result["summary"] == "DB PARTIAL (1/2 MATCH, 1 SKIPPED). LIVE UNVERIFIED."
+    assert result["receipt"]["issues"] == {"UNKNOWN_SETTING": "skipped:unknown"}
+    assert result["receipt"]["hints"] == {
+        "unknown": "Not a per-service setting on this BunkerWeb; check the exact uppercase name."
+    }
 
 
 @pytest.mark.asyncio
@@ -355,6 +389,29 @@ async def test_free_form_writes_with_placeholder_are_refused(
 @pytest.mark.asyncio
 async def test_non_sensitive_write_is_forwarded() -> None:
     client = SimpleNamespace(
+        base_url="http://redaction-write",
+        get_openapi_version=AsyncMock(return_value="1.6.17"),
+        read_global_config=AsyncMock(return_value=GlobalConfigResponse(data={"MULTISITE": "yes"})),
+        get_service=AsyncMock(
+            return_value=ServiceResponse(
+                data={
+                    "LETS_ENCRYPT_DNS_CREDENTIAL_DECODE_BASE64": _setting("no"),
+                    "USE_ANTIBOT": _setting("no"),
+                }
+            )
+        ),
+        list_plugins=AsyncMock(
+            return_value=PluginsResponse(
+                data=[
+                    {
+                        "settings": {
+                            "LETS_ENCRYPT_DNS_CREDENTIAL_DECODE_BASE64": {"context": "multisite"},
+                            "USE_ANTIBOT": {"context": "multisite"},
+                        }
+                    }
+                ]
+            )
+        ),
         update_service=AsyncMock(
             return_value=ServiceResponse(
                 status="success",

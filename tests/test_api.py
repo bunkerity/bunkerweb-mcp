@@ -17,6 +17,7 @@ from bunkerweb_mcp.schemas.core import HealthResponse, PingResponse
 from bunkerweb_mcp.schemas.global_config import GlobalConfigResponse
 from bunkerweb_mcp.schemas.instances import InstancesResponse
 from bunkerweb_mcp.schemas.jobs import JobsResponse
+from bunkerweb_mcp.schemas.plugins import PluginsResponse
 from bunkerweb_mcp.schemas.services import ServiceResponse, ServicesResponse
 
 SERVICE_CONFIG_PAYLOAD = {
@@ -72,6 +73,7 @@ SERVICE_LIST_PAYLOAD = [
 
 
 GLOBAL_CONFIG_PAYLOAD = {
+    "MULTISITE": "yes",
     "USE_REDIS": {
         "value": "yes",
         "global": True,
@@ -193,6 +195,14 @@ JOBS_LIST_PAYLOAD = {
 
 
 class DummyClient:
+    base_url = "http://api-dummy"
+
+    async def get_openapi_version(self) -> str:
+        return "1.6.17"
+
+    async def list_plugins(self, *, plugin_type: str, with_data: bool) -> PluginsResponse:
+        return PluginsResponse(data=[])
+
     async def close(self) -> None:
         return None
 

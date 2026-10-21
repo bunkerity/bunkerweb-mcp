@@ -380,11 +380,16 @@ async def test_instance_create_tool_builds_model() -> None:
 @pytest.mark.asyncio
 async def test_service_update_tool_filters_none() -> None:
     client = SimpleNamespace(
+        base_url="http://tools-update",
+        get_openapi_version=AsyncMock(return_value="1.6.17"),
+        read_global_config=AsyncMock(return_value=GlobalConfigResponse(data={"MULTISITE": "yes"})),
+        get_service=AsyncMock(return_value=ServiceResponse(data=SERVICE_CONFIG_PAYLOAD)),
+        list_plugins=AsyncMock(return_value=PluginsResponse(data=[])),
         update_service=AsyncMock(
             return_value=ServiceResponse(
                 status="success", service="svc", data=SERVICE_CONFIG_PAYLOAD
             )
-        )
+        ),
     )
     tools = Tools(client)  # type: ignore[arg-type]
     handler = tools.get_tool("update_service")

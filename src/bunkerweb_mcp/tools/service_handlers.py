@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from ..cache import CACHE_TTL, get_cached, invalidate_cache
 from ..config import get_settings
 from ..schemas.services import ServiceCreateRequest, ServiceUpdateRequest
+from .service_writes import build_receipt, preflight_update
 
 if TYPE_CHECKING:
     from .params import (
@@ -189,9 +190,9 @@ async def handle_update_service(
 
     Returns:
         API response dict with:
-            - data: Updated service object
+            - summary: Database verification summary; live state remains unverified
+            - receipt: Matched, skipped, and unverified database write outcomes
             - status: Update status
-            - changed_fields: List of modified fields
 
     Raises:
         ToolExecutionError: If service not found or update fails
@@ -204,13 +205,23 @@ async def handle_update_service(
         ... ))
         {"data": {...}, "status": "updated"}
     """
+    sent = await preflight_update(client, params)
     payload = ServiceUpdateRequest.model_validate(
-        params.model_dump(include={"server_name", "is_draft", "variables"}, exclude_none=True)
+        {
+            key: value
+            for key, value in {
+                "server_name": sent.server_name,
+                "is_draft": sent.is_draft,
+                "variables": sent.variables or None,
+            }.items()
+            if value is not None
+        }
     )
     response = await client.update_service(params.service, payload)
     # Invalidate service cache after mutation
     await invalidate_cache("services")
-    return _serialize_response(response)
+    receipt = await build_receipt(client, params, sent)
+    return {**receipt, **_serialize_response(response)}
 
 
 async def handle_delete_service(
