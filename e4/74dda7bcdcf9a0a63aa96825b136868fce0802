@@ -1,0 +1,39 @@
+tests/test_service_writes.py
+  s_7e1b7ad15af006::t_54e5109515f48a 341-361
+src/bunkerweb_mcp/tools/diagnose_handlers.py
+  s_7e1b7ad15af006::t_fd55eac1acd1f1 8,70,89-91
+src/bunkerweb_mcp/upstream.py
+  s_7e1b7ad15af006::t_fd55eac1acd1f1 32
+  s_7e1b7ad15af006::t_12cd829f643a51 59-60
+tests/test_upstream.py
+  s_7e1b7ad15af006::t_54e5109515f48a 85-86,89-95
+  s_7e1b7ad15af006::t_3f1386b2eb69ef 78-80
+tests/test_api.py
+  s_7e1b7ad15af006::t_54e5109515f48a 378-382,402-406
+src/bunkerweb_mcp/main.py
+  s_7e1b7ad15af006::t_fd55eac1acd1f1 40,172,180-181
+README.md
+  s_7e1b7ad15af006::t_8b4150b418d209 208-209
+docs/adr/0006-tool-effects-and-read-only-mode.md
+  s_7e1b7ad15af006::t_5bdd5db6b32892 63,84-89,117-119
+src/bunkerweb_mcp/tools/service_writes.py
+  s_7e1b7ad15af006::t_e032c6fa722a32 199-206
+tests/test_diagnose.py
+  s_7e1b7ad15af006::t_3a08f60ddc6310 148-169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e474dda7bcdcf9a0a63aa96825b136868fce0802",
+  "prompts": {},
+  "sessions": {
+    "s_7e1b7ad15af006": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a159ff-4bd9-79c1-8757-ce3ca04f48b2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
