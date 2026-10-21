@@ -1,0 +1,19 @@
+.github/workflows/ci.yml
+  s_e31ebb5d10752b::t_dcd7a550a99af4 174-175,193-194,264-265,283-284
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cb5ad8bbc5170d24c8fe32f089b5e24a70c57837",
+  "prompts": {},
+  "sessions": {
+    "s_e31ebb5d10752b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15daa-c92e-7fa1-9ca4-c00933968be9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
