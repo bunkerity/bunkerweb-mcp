@@ -1,0 +1,18 @@
+deploy/kubernetes/README.md
+  h_a33a1e80933106 298
+deploy/kubernetes/deployment.yaml
+  h_a33a1e80933106 10
+src/bunkerweb_mcp/__init__.py
+  h_a33a1e80933106 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "38367a499c064e11838430d25c0fb622d3a2d715",
+  "prompts": {},
+  "humans": {
+    "h_a33a1e80933106": {
+      "author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
