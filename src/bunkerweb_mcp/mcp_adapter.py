@@ -275,11 +275,21 @@ def _register_search_tool(server: MCPServer, settings: Settings) -> None:
         return
 
     async def search_bunkerweb_docs(
-        query: str,
-        limit: int = 5,
-        category: str | None = None,
-        min_score: float = 0.2,
-        max_content_length: int = 500,
+        query: Annotated[
+            str, Field(description="Question or topic in natural language, any language")
+        ],
+        limit: Annotated[int, Field(description="Maximum results to return, 1 to 50")] = 5,
+        category: Annotated[
+            str | None,
+            Field(description="Optional docs section filter, e.g. api, plugins, features"),
+        ] = None,
+        min_score: Annotated[
+            float,
+            Field(description="Relevance threshold from 0 to 1; lower it when nothing matches"),
+        ] = 0.2,
+        max_content_length: Annotated[
+            int, Field(description="Characters of content per result; 0 returns full sections")
+        ] = 500,
     ) -> dict[str, Any]:
         """
         Search the BunkerWeb documentation using semantic search.
@@ -352,7 +362,11 @@ def _register_search_tool(server: MCPServer, settings: Settings) -> None:
     server.add_tool(
         search_bunkerweb_docs,
         name="search_bunkerweb_docs",
-        description="Semantic search across BunkerWeb documentation using AI embeddings (via remote API)",
+        description=(
+            "Search the official BunkerWeb documentation by meaning (remote semantic search). "
+            "Returns titled sections with URL, category and relevance, one per document. Use it "
+            "for how-to and setting questions; use the API tools to read live state."
+        ),
         annotations=effect_for("search_bunkerweb_docs").annotations(),
     )
 

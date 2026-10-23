@@ -142,6 +142,17 @@ def test_read_only_tools_drop_unclassified_tools(monkeypatch: pytest.MonkeyPatch
     assert tools.get_tool("list_services") is not None
 
 
+def test_read_descriptions_only_name_writes_conditionally() -> None:
+    """In read-only mode a read must not direct agents to a write tool as if it existed."""
+    writes = {name for name, effect in TOOL_EFFECTS.items() if not effect.read_only}
+    for name, description in TOOL_DESCRIPTIONS.items():
+        if not effect_for(name).read_only:
+            continue
+        for write in writes:
+            if write in description:
+                assert f"{write} when writes are enabled" in description, (name, write)
+
+
 SERVICE_CONFIG_PAYLOAD = {
     "SERVER_NAME": {
         "value": "integration.api.test",

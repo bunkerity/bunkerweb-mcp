@@ -406,16 +406,32 @@ async def test_tools_endpoint_lists_sdk_tool_schema(read_only: bool) -> None:
         assert all(item["read_only"] for item in response.json())
     assert tool["input_schema"] == {
         "properties": {
-            "query": {"title": "Query", "type": "string"},
-            "limit": {"default": 5, "title": "Limit", "type": "integer"},
+            "query": {
+                "description": "Question or topic in natural language, any language",
+                "title": "Query",
+                "type": "string",
+            },
+            "limit": {
+                "default": 5,
+                "description": "Maximum results to return, 1 to 50",
+                "title": "Limit",
+                "type": "integer",
+            },
             "category": {
                 "anyOf": [{"type": "string"}, {"type": "null"}],
                 "default": None,
+                "description": "Optional docs section filter, e.g. api, plugins, features",
                 "title": "Category",
             },
-            "min_score": {"default": 0.2, "title": "Min Score", "type": "number"},
+            "min_score": {
+                "default": 0.2,
+                "description": "Relevance threshold from 0 to 1; lower it when nothing matches",
+                "title": "Min Score",
+                "type": "number",
+            },
             "max_content_length": {
                 "default": 500,
+                "description": "Characters of content per result; 0 returns full sections",
                 "title": "Max Content Length",
                 "type": "integer",
             },
