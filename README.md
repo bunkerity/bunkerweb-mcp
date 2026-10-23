@@ -302,6 +302,8 @@ an 80% coverage floor.
 [.pre-commit-config.yaml](.pre-commit-config.yaml) checks YAML/TOML, file hygiene,
 and Python lint/formatting. Run `pre-commit install` to install the local hooks.
 The [architecture decisions](docs/adr/README.md) record design context.
+[docs/tdqs.md](docs/tdqs.md) explains the Glama quality score and how to run the same
+scorer locally with `scripts/tdqs.py` before changing tool descriptions.
 
 ## Supply chain
 
