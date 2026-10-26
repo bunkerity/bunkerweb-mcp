@@ -2,9 +2,9 @@
 pytest==9.1.1
 pytest-asyncio==1.4.0
 pytest-cov==7.1.0
-asgiref==3.12.1
-ruff==0.17.1
+asgiref==3.13.0
+ruff==0.17.2
 mypy==2.4.0
 bandit==1.9.4
-locust==2.46.7
+locust==2.47.0
 pre-commit==4.7.0
