@@ -1,8 +1,8 @@
-fastapi==0.143.2
+fastapi==0.161.1
 uvicorn[standard]==0.54.0
 httpx[http2]==0.28.1
 pydantic==2.14.1
-pydantic-settings==2.16.0
+pydantic-settings==2.16.1
 python-dotenv==1.2.4
 tenacity==9.2.1
 mcp==2.3.0
