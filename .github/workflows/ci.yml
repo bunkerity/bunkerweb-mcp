@@ -224,7 +224,6 @@ jobs:
           images: bunkerity/bunkerweb-mcp
           tags: |
             type=sha
-            type=raw,value=latest
       - name: Build image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
@@ -232,14 +231,16 @@ jobs:
           file: Dockerfile
           platforms: linux/amd64
           load: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: |
+            ${{ steps.meta.outputs.tags }}
+            local/bunkerweb-mcp:amd64
           labels: ${{ steps.meta.outputs.labels }}
       - name: Start container
         run: |
           docker run --detach --name bunkerweb-mcp-amd64 --platform linux/amd64 \
             --env SEARCH_MODE=disabled \
             --env MCP_ALLOWED_HOSTS=localhost,localhost:8080,127.0.0.1,127.0.0.1:8080 \
-            --publish 8080:8080 bunkerity/bunkerweb-mcp:latest
+            --publish 8080:8080 local/bunkerweb-mcp:amd64
       - name: Check health
         run: |
           for _ in {1..60}; do
@@ -253,7 +254,7 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: image
-          image-ref: bunkerity/bunkerweb-mcp:latest
+          image-ref: local/bunkerweb-mcp:amd64
           scanners: vuln
           ignore-unfixed: true
           severity: HIGH,CRITICAL
@@ -274,7 +275,7 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: image
-          image-ref: bunkerity/bunkerweb-mcp:latest
+          image-ref: local/bunkerweb-mcp:amd64
           scanners: vuln
           ignore-unfixed: true
           severity: HIGH,CRITICAL
