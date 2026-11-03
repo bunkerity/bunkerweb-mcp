@@ -1,0 +1,23 @@
+deploy/kubernetes/README.md
+  s_9c686d72f5319d::t_535e83140ebb4a 298
+deploy/kubernetes/deployment.yaml
+  s_9c686d72f5319d::t_6c8dea735624cd 10
+src/bunkerweb_mcp/__init__.py
+  s_9c686d72f5319d::t_1a093bbe96ff27 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "040ac955622406fd8184c3691d25b7dac1967d9b",
+  "prompts": {},
+  "sessions": {
+    "s_9c686d72f5319d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b8c02f78-751d-420d-9089-53b77bfd85b7",
+        "model": "unknown"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
