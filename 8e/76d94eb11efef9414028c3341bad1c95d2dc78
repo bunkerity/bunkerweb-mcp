@@ -1,0 +1,22 @@
+.github/workflows/ci.yml
+  s_048d8586668fb1::t_8ab0e77b24e880 278
+  s_048d8586668fb1::t_1a225b90aa4a73 257
+  s_048d8586668fb1::t_e61acdfeea4df9 243
+  s_048d8586668fb1::t_565dd64c2ac98c 234-236
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8e76d94eb11efef9414028c3341bad1c95d2dc78",
+  "prompts": {},
+  "sessions": {
+    "s_048d8586668fb1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "63249c77-0e6a-4ebd-bbd3-7c77e7cff397",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
