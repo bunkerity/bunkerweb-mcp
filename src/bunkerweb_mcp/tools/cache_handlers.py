@@ -46,7 +46,7 @@ async def handle_list_cache(
     return _serialize_response(response)
 
 
-async def handle_delete_cache_bulk(
+async def handle_delete_cache_files(
     client: BunkerWebClientProtocol, params: CacheDeleteBulkParams
 ) -> dict[str, Any]:
     """Delete multiple cache files."""
@@ -68,16 +68,3 @@ async def handle_fetch_cache_file(
         download=params.download,
     )
     return result
-
-
-async def handle_delete_cache_file(
-    client: BunkerWebClientProtocol, params: CacheFileKeyParams
-) -> dict[str, Any]:
-    """Delete a single cache file."""
-    response = await client.delete_cache_file(
-        service=params.service or "global",
-        plugin_id=params.plugin,
-        job_name=params.job_name,
-        file_name=params.file_name,
-    )
-    return _serialize_response(response)

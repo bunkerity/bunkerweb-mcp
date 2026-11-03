@@ -18,7 +18,7 @@
         "url": "http://bw-mcp:8080/rpc",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\"tool\": \"unban_ip\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {\n    \"bans\": {{ JSON.stringify($json.query?.bans || $json.bans) }}\n  }\n}",
+        "jsonBody": "={\"tool\": \"unban_ips\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {\n    \"bans\": {{ JSON.stringify($json.query?.bans || $json.bans) }}\n  }\n}",
         "options": {
           "timeout": 10000
         }

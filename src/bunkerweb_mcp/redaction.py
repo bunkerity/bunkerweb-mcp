@@ -64,7 +64,7 @@ def effective_cache_file_name(file_name: str) -> str:
 SETTINGS_WRITE_FIELDS: dict[str, str] = {
     "create_service": "variables",
     "update_service": "variables",
-    "global_config_update": "config",
+    "update_global_config": "config",
 }
 
 # Fields that carry the value of a setting in the ``methods=true`` shape and in
@@ -175,7 +175,7 @@ class RedactionPolicy:
         """Mask the content of cache entries that may hold secrets.
 
         Args:
-            obj: Result of the ``cache_list`` tool.
+            obj: Result of the ``list_cache_files`` tool.
 
         Returns:
             A copy where the ``data`` of each sensitive entry is masked.
@@ -235,7 +235,7 @@ class RedactionPolicy:
         offending = self.find_sensitive_write(tool_name, params)
         if offending:
             raise ToolValidationError(_WRITE_REFUSED.format(keys=", ".join(offending)))
-        if tool_name == "cache_fetch_file":
+        if tool_name == "get_cache_file":
             plugin = getattr(params, "plugin", None)
             file_name = getattr(params, "file_name", None)
             if self.is_sensitive_cache_file(plugin, file_name):
@@ -251,9 +251,9 @@ class RedactionPolicy:
         Returns:
             The redacted copy.
         """
-        if tool_name == "cache_list":
+        if tool_name == "list_cache_files":
             result = self.redact_cache_entries(result)
-        elif tool_name == "authenticate" and result.get("token"):
+        elif tool_name == "create_api_token" and result.get("token"):
             # The Biscuit token is an API credential; the client never reuses it.
             result = {**result, "token": REDACTED}
         redacted: dict[str, Any] = self.redact(result)

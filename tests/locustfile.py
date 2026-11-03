@@ -52,7 +52,7 @@ class MCPUserBehavior(TaskSet):
         )
 
     @task(2)
-    def global_config_read(self):
+    def get_global_config(self):
         """Read global configuration."""
         self.client.post(
             "/rpc",
@@ -61,7 +61,7 @@ class MCPUserBehavior(TaskSet):
                 "params": {"full": False, "methods": False},
                 "id": "global-config",
             },
-            name="global_config_read",
+            name="get_global_config",
         )
 
     @task(2)
@@ -92,7 +92,7 @@ class MCPUserBehavior(TaskSet):
                 "params": {},
                 "id": "ping",
             },
-            name="ping",
+            name="ping_api",
         )
 
 

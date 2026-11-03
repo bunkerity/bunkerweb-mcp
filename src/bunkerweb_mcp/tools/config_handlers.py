@@ -40,7 +40,7 @@ def _build_config_key(params: ConfigKeyParams) -> ConfigKey:
     return ConfigKey(service=params.service, type=params.type, name=params.name)
 
 
-async def handle_read_global_config(
+async def handle_get_global_config(
     client: BunkerWebClientProtocol, params: GlobalConfigReadParams
 ) -> dict[str, Any]:
     """Read the global configuration values."""
@@ -53,7 +53,7 @@ async def handle_read_global_config(
             return _serialize_response(response)
 
         return await get_cached(  # type: ignore[no-any-return]
-            cache_key, CACHE_TTL["global_config_read"], fetch_and_serialize
+            cache_key, CACHE_TTL["get_global_config"], fetch_and_serialize
         )
     response = await client.read_global_config(full=params.full, methods=params.methods)
     return _serialize_response(response)
@@ -115,16 +115,7 @@ async def handle_update_config(
     return _serialize_response(response)
 
 
-async def handle_delete_config(
-    client: BunkerWebClientProtocol, params: ConfigKeyParams
-) -> dict[str, Any]:
-    """Delete a specific configuration snippet."""
-    key = _build_config_key(params)
-    response = await client.delete_config(key)
-    return _serialize_response(response)
-
-
-async def handle_delete_configs_bulk(
+async def handle_delete_configs(
     client: BunkerWebClientProtocol, params: ConfigsDeleteParams
 ) -> dict[str, Any]:
     """Delete multiple configuration snippets."""

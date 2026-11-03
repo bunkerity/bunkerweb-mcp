@@ -117,7 +117,7 @@
     },
     {
       "parameters": {
-        "name": "ban_ip",
+        "name": "ban_ips",
         "description": "Bannit une ou plusieurs adresses IP avec une durée et une raison spécifiées",
         "workflowId": "mwSZrTj28PVZV6UI",
         "specifyInputSchema": true,
@@ -134,7 +134,7 @@
     },
     {
       "parameters": {
-        "name": "unban_ip",
+        "name": "unban_ips",
         "description": "Débannit une ou plusieurs adresses IP",
         "workflowId": "xeIXNUkSeIiO7pht",
         "specifyInputSchema": true,

@@ -203,14 +203,14 @@ async def test_list_tools_returns_descriptors(async_client) -> None:
     async def handler(_: dict[str, Any]) -> dict[str, Any]:
         return {"status": "success"}
 
-    tools.handlers["ping"] = handler
+    tools.handlers["ping_api"] = handler
 
     response = await client.get("/tools")
 
     assert response.status_code == 200
-    expected_descriptor = {"name": "ping", "description": "", "input_schema": {}}
-    if "ping" in tools.prompts:
-        expected_descriptor["prompt"] = tools.prompts["ping"]
+    expected_descriptor = {"name": "ping_api", "description": "", "input_schema": {}}
+    if "ping_api" in tools.prompts:
+        expected_descriptor["prompt"] = tools.prompts["ping_api"]
     assert response.json() == [expected_descriptor]
 
 

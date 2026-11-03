@@ -169,30 +169,30 @@ otherwise the server registers `search_bunkerweb_docs` and readiness checks the 
 ## Tools and resources
 
 Read `GET /tools` for the running server's tool names, descriptions, and input
-schemas. The [registry](src/bunkerweb_mcp/tools/registry.py) defines 44 API tools:
+schemas. The [registry](src/bunkerweb_mcp/tools/registry.py) defines 36 API tools, all named `verb_noun` ([ADR 0007](docs/adr/0007-verb-noun-tool-names.md)):
 
 | Group | Tools |
 | --- | --- |
-| Authentication and probes | `authenticate`, `ping`, `health`, `diagnose` |
-| Instances | `list_instances`, `instance_get`, `instance_create`, `instance_update`, `instance_delete`, `instances_delete_bulk`, `instance_ping`, `instances_ping_all`, `instance_stop`, `instances_stop_all`, `reload_instance`, `reload_instances` |
-| Bans | `list_bans`, `ban_ip`, `unban_ip` |
-| Services | `list_services`, `get_service`, `create_service`, `update_service`, `delete_service`, `convert_service` |
-| Global configuration | `global_config_read`, `global_config_update` |
-| Custom configuration | `configs_list`, `config_get`, `config_create`, `config_update`, `config_delete`, `configs_delete_bulk`, `configs_upload`, `config_upload_update` |
-| Plugins | `plugins_list`, `plugins_upload`, `plugin_delete` |
-| Job cache files | `cache_list`, `cache_fetch_file`, `cache_delete_file`, `cache_delete_bulk` |
-| Scheduler jobs | `jobs_list`, `jobs_run` |
+| Authentication and probes | `create_api_token`, `ping_api`, `diagnose_bunkerweb` |
+| Instances | `list_instances`, `get_instance`, `create_instance`, `update_instance`, `delete_instances`, `ping_instances`, `stop_instances`, `reload_instances` |
+| Bans | `list_bans`, `ban_ips`, `unban_ips` |
+| Services | `list_services`, `get_service`, `create_service`, `update_service`, `delete_service` |
+| Global configuration | `get_global_config`, `update_global_config` |
+| Custom configuration | `list_configs`, `get_config`, `create_config`, `create_configs_from_files`, `update_config`, `update_config_from_file`, `delete_configs` |
+| Plugins | `list_plugins`, `install_plugins`, `uninstall_plugin` |
+| Job cache files | `list_cache_files`, `get_cache_file`, `delete_cache_files` |
+| Scheduler jobs | `list_jobs`, `run_jobs` |
 
 Optional tools:
 
-- `logs_list`, `logs_read`: register when `BUNKERWEB_LOGS_PATH` points to a runtime
+- `list_logs`, `read_log`: register when `BUNKERWEB_LOGS_PATH` points to a runtime
   log directory. Mount it read-only; HTTP mode also requires the shared secret.
   Reads scan up to 1 MiB and return at most 500 lines or 64 KiB of content, with
   cursors for older history. Compressed `.gz` rotations are excluded. Treat log
   content as untrusted data.
 - `search_bunkerweb_docs`: registers in remote search mode.
 
-Use `diagnose` to check the connected API's host, reachability, authentication, version,
+Use `diagnose_bunkerweb` to check the connected API's host, reachability, authentication, version,
 `MULTISITE`, and instance counts. Pass `service` to inspect its existence, draft state,
 and setting-owner counts. An unknown version appears as
 `unknown (strictest rules applied)`.
@@ -210,8 +210,13 @@ draft adds `DRAFT: NOT PUBLISHED.` A failed read-back omits the draft marker.
 The summary always ends `LIVE UNVERIFIED.` BunkerWeb 1.6 offers no live-state signal;
 the receipt does not prove that instances use the saved configuration.
 
+`stop_instances` and `reload_instances` need exactly one of `hostname` or `all=true`; any other
+combination fails validation and sends nothing to BunkerWeb. `delete_instances`,
+`delete_configs` and `delete_cache_files` take a list and always call the bulk endpoint.
+`update_service` with `is_draft` toggles a service between draft and online.
+
 Tool metadata identifies reads and destructive writes. `MCP_READ_ONLY=true` removes
-write tools and their prompts on every transport, including `authenticate`, which
+write tools and their prompts on every transport, including `create_api_token`, which
 returns a credential. See [ADR 0006](docs/adr/0006-tool-effects-and-read-only-mode.md)
 for the version rules and enforcement boundary.
 

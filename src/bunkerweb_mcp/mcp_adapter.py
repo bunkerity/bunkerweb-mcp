@@ -19,7 +19,7 @@ from .config import Settings
 from .exceptions import BunkerWebError, ToolExecutionError, ToolValidationError
 from .skill_catalog import SKILL_URI_PREFIX, SkillEntry, load_skills
 from .tools import Tools
-from .tools.registry import effect_for
+from .tools.registry import SEARCH_TOOL_DESCRIPTION, effect_for
 
 ToolHandler = Callable[[BaseModel], Awaitable[dict[str, Any]]]
 
@@ -148,9 +148,9 @@ def _register_resources(server: MCPServer, tools: Tools) -> None:
     # Resource: Global configuration
     async def get_global_config() -> str:
         """Fetch the current global BunkerWeb configuration."""
-        tool = tools.get_tool("global_config_read")
+        tool = tools.get_tool("get_global_config")
         if tool is None:
-            raise ResourceError("global_config_read tool not available")
+            raise ResourceError("get_global_config tool not available")
         try:
             result = await tool({"full": True, "methods": False})
 
@@ -187,9 +187,9 @@ def _register_resources(server: MCPServer, tools: Tools) -> None:
     # Resource: Scheduler jobs and execution history
     async def get_jobs_history() -> str:
         """Fetch scheduler jobs with their execution history."""
-        tool = tools.get_tool("jobs_list")
+        tool = tools.get_tool("list_jobs")
         if tool is None:
-            raise ResourceError("jobs_list tool not available")
+            raise ResourceError("list_jobs tool not available")
         try:
             result = await tool({})
             return json.dumps(result, indent=2)
@@ -362,11 +362,7 @@ def _register_search_tool(server: MCPServer, settings: Settings) -> None:
     server.add_tool(
         search_bunkerweb_docs,
         name="search_bunkerweb_docs",
-        description=(
-            "Search the official BunkerWeb documentation by meaning (remote semantic search). "
-            "Returns titled sections with URL, category and relevance, one per document. Use it "
-            "for how-to and setting questions; use the API tools to read live state."
-        ),
+        description=SEARCH_TOOL_DESCRIPTION,
         annotations=effect_for("search_bunkerweb_docs").annotations(),
     )
 

@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 import base64
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, Self, runtime_checkable
 
-from pydantic import BaseModel, Field, IPvAnyAddress
+from pydantic import BaseModel, Field, IPvAnyAddress, model_validator
 
 if TYPE_CHECKING:
     from ..schemas.bans import BanRequestModel, BansResponse, UnbanRequestModel
     from ..schemas.cache import CacheFilesDeleteRequest
     from ..schemas.common import ApiResponse
     from ..schemas.configs import ConfigUpdateRequest
-    from ..schemas.core import AuthResponse, HealthResponse, PingResponse
+    from ..schemas.core import AuthResponse, PingResponse
     from ..schemas.instances import (
         InstanceCreateRequest,
         InstancesDeleteRequest,
@@ -43,8 +43,6 @@ class BunkerWebClientProtocol(Protocol):
 
     async def ping(self) -> PingResponse: ...
 
-    async def health(self) -> HealthResponse: ...
-
     async def list_instances(self) -> InstancesResponse: ...
 
     async def ping_instances(self) -> ApiResponse: ...
@@ -69,8 +67,6 @@ class BunkerWebClientProtocol(Protocol):
 
     async def delete_instances(self, payload: InstancesDeleteRequest) -> InstancesResponse: ...
 
-    async def delete_instance(self, hostname: str) -> ApiResponse: ...
-
     async def list_bans(self) -> BansResponse: ...
 
     async def ban(self, bans: Any) -> BansResponse: ...
@@ -94,8 +90,6 @@ class BunkerWebClientProtocol(Protocol):
 
     async def delete_service(self, service: str) -> ApiResponse: ...
 
-    async def convert_service(self, service: str, *, convert_to: str) -> ApiResponse: ...
-
     async def read_global_config(self, *, full: bool, methods: bool) -> ApiResponse: ...
 
     async def update_global_config(self, payload: dict[str, Any]) -> ApiResponse: ...
@@ -116,8 +110,6 @@ class BunkerWebClientProtocol(Protocol):
     async def get_config(self, key: Any, *, with_data: bool) -> ApiResponse: ...
 
     async def update_config(self, key: Any, payload: ConfigUpdateRequest) -> ApiResponse: ...
-
-    async def delete_config(self, key: Any) -> ApiResponse: ...
 
     async def upload_configs(
         self,
@@ -169,15 +161,6 @@ class BunkerWebClientProtocol(Protocol):
         download: bool,
     ) -> dict[str, Any]: ...
 
-    async def delete_cache_file(
-        self,
-        *,
-        service: str,
-        plugin_id: str,
-        job_name: str,
-        file_name: str,
-    ) -> ApiResponse: ...
-
     async def list_jobs(self) -> ApiResponse: ...
 
     async def run_jobs(self, payload: RunJobsRequest) -> ApiResponse: ...
@@ -203,22 +186,46 @@ class DiagnoseParams(_BaseToolParams):
     )
 
 
-class ReloadParams(_BaseToolParams):
+class OptionalHostnameParams(_BaseToolParams):
+    hostname: str | None = Field(
+        default=None,
+        min_length=1,
+        description="Hostname of one instance, as returned by list_instances; omit to ping every instance",
+    )
+
+
+class InstanceTargetParams(_BaseToolParams):
+    hostname: str | None = Field(
+        default=None,
+        min_length=1,
+        description="Hostname of one instance, as returned by list_instances; give it or all=true, not both",
+    )
+    all: bool = Field(
+        default=False,
+        description="Act on every registered instance; give it or hostname, not both",
+    )
+
+    @model_validator(mode="after")
+    def _exactly_one_target(self) -> Self:
+        if (self.hostname is None) == (not self.all):
+            raise ValueError("give exactly one of hostname or all=true")
+        return self
+
+
+class ReloadInstancesParams(InstanceTargetParams):
     test: bool = Field(
         True,
         description="Test the configuration first and reload only if the test passes; this still reloads, it is not a dry run.",
     )
 
 
-class HostnameParams(ReloadParams):
-    hostname: str = Field(..., min_length=1, description="Target instance hostname")
-
-
 class BanPayload(_BaseToolParams):
-    ip: IPvAnyAddress = Field(..., description="IP address to ban")
+    ip: IPvAnyAddress = Field(..., description="IPv4 or IPv6 address to ban")
     exp: int = Field(86400, ge=0, description="Expiration in seconds (0 means permanent)")
     reason: str = Field("api", min_length=1, max_length=255, description="Audit log reason")
-    service: str | None = Field(None, description="Optional service identifier")
+    service: str | None = Field(
+        None, description="Service ID to ban on; omit for a global ban on every service"
+    )
 
     def to_model(self) -> BanRequestModel:
         from ..schemas.bans import BanRequestModel
@@ -227,8 +234,10 @@ class BanPayload(_BaseToolParams):
 
 
 class UnbanPayload(_BaseToolParams):
-    ip: IPvAnyAddress = Field(..., description="IP address to unban")
-    service: str | None = Field(None, description="Optional service identifier")
+    ip: IPvAnyAddress = Field(..., description="IP address to unban, as list_bans shows it")
+    service: str | None = Field(
+        None, description="Service ID the ban was set on, as list_bans shows; omit for a global ban"
+    )
 
     def to_model(self) -> UnbanRequestModel:
         from ..schemas.bans import UnbanRequestModel
@@ -249,20 +258,34 @@ class ListServicesParams(_BaseToolParams):
 
 
 class GetServiceParams(_BaseToolParams):
-    service: str = Field(..., min_length=1, description="Service identifier")
+    service: str = Field(
+        ...,
+        min_length=1,
+        description="Service ID (its first SERVER_NAME), as list_services returns it",
+    )
     full: bool = Field(False, description="Include derived defaults")
     methods: bool = Field(True, description="Include method metadata")
     with_drafts: bool = Field(True, description="Include draft services")
 
 
 class DeleteServiceParams(_BaseToolParams):
-    service: str = Field(..., min_length=1, description="Service identifier to delete")
+    service: str = Field(
+        ...,
+        min_length=1,
+        description="Service ID (its first SERVER_NAME) to delete, with all its settings",
+    )
 
 
 class AuthParams(_BaseToolParams):
-    username: str | None = Field(default=None, description="Username for Basic auth")
-    password: str | None = Field(default=None, description="Password for Basic auth")
-    payload: dict[str, Any] | None = Field(default=None, description="Optional JSON payload")
+    username: str | None = Field(
+        default=None,
+        description="API user name; give it with password, or omit both to use the server's credentials",
+    )
+    password: str | None = Field(default=None, description="Password of that API user")
+    payload: dict[str, Any] | None = Field(
+        default=None,
+        description="Extra JSON fields for the /auth body; a username or password in it overrides the parameters",
+    )
 
 
 class SimpleHostnameParams(_BaseToolParams):
@@ -310,28 +333,30 @@ class InstanceUpdateParams(_BaseToolParams):
 
 
 class InstancesDeleteParams(_BaseToolParams):
-    instances: list[str] = Field(..., min_length=1, description="Hostnames to delete")
+    instances: list[str] = Field(
+        ..., min_length=1, description="Hostnames to unregister, as list_instances returns them"
+    )
 
 
 class ServiceCreateParams(_BaseToolParams):
-    server_name: str = Field(..., description="Primary server name")
-    is_draft: bool = Field(default=False, description="Create as draft")
-    variables: dict[str, str] | None = Field(default=None, description="Service variables")
+    server_name: str = Field(..., description="Server name; its first word becomes the service ID")
+    is_draft: bool = Field(default=False, description="Create as an unpublished draft")
+    variables: dict[str, str] | None = Field(
+        default=None,
+        description='Unprefixed per-service setting names and values, e.g. {"USE_MODSECURITY": "yes"}',
+    )
 
 
 class ServiceUpdateParams(_BaseToolParams):
     service: str = Field(..., description="Existing service identifier")
     server_name: str | None = Field(default=None, description="Rename the service")
-    is_draft: bool | None = Field(default=None, description="Toggle draft state")
+    is_draft: bool | None = Field(
+        default=None, description="True makes the service an unpublished draft, false publishes it"
+    )
     variables: dict[str, str] | None = Field(
         default=None,
         description="Unprefixed per-service setting names and values; unknown or externally owned names are skipped and reported.",
     )
-
-
-class ServiceConvertParams(_BaseToolParams):
-    service: str = Field(..., description="Service identifier")
-    convert_to: str = Field(..., pattern="^(online|draft)$", description="Target state")
 
 
 class GlobalConfigReadParams(_BaseToolParams):
@@ -340,7 +365,10 @@ class GlobalConfigReadParams(_BaseToolParams):
 
 
 class GlobalConfigUpdateParams(_BaseToolParams):
-    config: dict[str, Any] = Field(..., description="Key-value pairs to update")
+    config: dict[str, Any] = Field(
+        ...,
+        description='Global setting names and values, e.g. {"USE_ANTIBOT": "no"}; stored as strings',
+    )
 
 
 _CONFIG_TYPE_HELP = (
@@ -370,7 +398,9 @@ class ConfigKeyParams(_BaseToolParams):
 
 
 class ConfigCreateParams(ConfigKeyParams):
-    data: str = Field(..., description="Configuration content")
+    data: str = Field(
+        ..., description="Snippet content as UTF-8 text, e.g. nginx or ModSecurity directives"
+    )
     is_draft: bool = Field(default=False, description="Create as draft")
 
 
@@ -434,7 +464,7 @@ class PluginUploadParams(_BaseToolParams):
 
 class PluginDeleteParams(_BaseToolParams):
     plugin_id: str = Field(
-        ..., min_length=1, description="ID of a UI plugin, as returned by plugins_list type=ui"
+        ..., min_length=1, description="ID of a UI plugin, as returned by list_plugins type=ui"
     )
 
 
@@ -454,14 +484,16 @@ class CacheFileKeyParams(_BaseToolParams):
     service: str | None = Field(
         default=None, description="Service ID that owns the file; omit for global"
     )
-    plugin: str = Field(..., description="Plugin ID that owns the file, as listed by cache_list")
-    job_name: str = Field(..., description="Job that wrote the file, as listed by cache_list")
-    file_name: str = Field(..., description="File name, as listed by cache_list")
+    plugin: str = Field(
+        ..., description="Plugin ID that owns the file, as listed by list_cache_files"
+    )
+    job_name: str = Field(..., description="Job that wrote the file, as listed by list_cache_files")
+    file_name: str = Field(..., description="File name, as listed by list_cache_files")
 
 
 class CacheDeleteBulkParams(_BaseToolParams):
     files: list[CacheFileKeyParams] = Field(
-        ..., min_length=1, description="Cache files to delete, each keyed as in cache_list"
+        ..., min_length=1, description="Cache files to delete, each keyed as in list_cache_files"
     )
 
 
@@ -480,11 +512,15 @@ class JobDescriptor(BaseModel):
 
 
 class JobsRunParams(_BaseToolParams):
-    jobs: list[JobDescriptor] = Field(..., min_length=1, description="Jobs to execute")
+    jobs: list[JobDescriptor] = Field(
+        ...,
+        min_length=1,
+        description="Jobs to trigger, as list_jobs shows; each plugin's jobs all run",
+    )
 
 
 class LogsReadParams(_BaseToolParams):
-    source: str = Field(..., min_length=1, max_length=255, description="Source from logs_list")
+    source: str = Field(..., min_length=1, max_length=255, description="Source from list_logs")
     query: str | None = Field(
         default=None,
         min_length=1,
@@ -495,5 +531,5 @@ class LogsReadParams(_BaseToolParams):
     cursor: int | None = Field(
         default=None,
         ge=0,
-        description="Byte cursor returned by a previous logs_read call",
+        description="Byte cursor returned by a previous read_log call",
     )

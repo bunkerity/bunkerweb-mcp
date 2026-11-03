@@ -1,3 +1,5 @@
+import re
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock
@@ -16,7 +18,7 @@ from bunkerweb_mcp.schemas.configs import (
     ConfigsDeleteRequest,
     ConfigUpdateRequest,
 )
-from bunkerweb_mcp.schemas.core import AuthResponse, HealthResponse, PingResponse
+from bunkerweb_mcp.schemas.core import AuthResponse, PingResponse
 from bunkerweb_mcp.schemas.global_config import GlobalConfigResponse
 from bunkerweb_mcp.schemas.instances import (
     InstanceCreateRequest,
@@ -32,8 +34,16 @@ from bunkerweb_mcp.schemas.services import (
     ServicesResponse,
 )
 from bunkerweb_mcp.tools import Tools
-from bunkerweb_mcp.tools.params import ReloadParams
-from bunkerweb_mcp.tools.registry import TOOL_DESCRIPTIONS, TOOL_EFFECTS, ToolEffect, effect_for
+from bunkerweb_mcp.tools.params import ReloadInstancesParams
+from bunkerweb_mcp.tools.registry import (
+    SEARCH_TOOL_DESCRIPTION,
+    TOOL_DESCRIPTIONS,
+    TOOL_EFFECTS,
+    ToolEffect,
+    effect_for,
+)
+
+ALL_DESCRIPTIONS = {**TOOL_DESCRIPTIONS, "search_bunkerweb_docs": SEARCH_TOOL_DESCRIPTION}
 
 SAVED_PHRASE = (
     "Saved to the database; the scheduler applies it later; this tool cannot confirm it is live."
@@ -41,34 +51,35 @@ SAVED_PHRASE = (
 DIRECT_PHRASE = "Acts on the instances immediately."
 QUEUED_PHRASE = "Queued for the scheduler; this tool cannot confirm it ran."
 
+CREATE_API_TOKEN_DESCRIPTION = (
+    "Create a BunkerWeb API token (Biscuit) for use outside this server; returns only the "
+    "token, a live credential to keep secret. Give username and password, or omit both to use "
+    "the server's credentials. Needs an API user; lifetime is BunkerWeb's "
+    "API_BISCUIT_TTL_SECONDS. Redaction may mask it."
+)
+
 # Route paths below are relative to bunkerweb-dev/src/api/app/routers/.
 WRITE_TIMING = {
     "create_service": SAVED_PHRASE,
     "update_service": SAVED_PHRASE,
     "delete_service": SAVED_PHRASE,
-    "convert_service": SAVED_PHRASE,
-    "global_config_update": SAVED_PHRASE,
-    "config_create": SAVED_PHRASE,
-    "config_update": SAVED_PHRASE,
-    "config_delete": SAVED_PHRASE,
-    "configs_delete_bulk": SAVED_PHRASE,
-    "configs_upload": SAVED_PHRASE,
-    "config_upload_update": SAVED_PHRASE,
-    "instance_stop": DIRECT_PHRASE,
-    "instances_stop_all": DIRECT_PHRASE,
-    "reload_instance": DIRECT_PHRASE,
+    "update_global_config": SAVED_PHRASE,
+    "create_config": SAVED_PHRASE,
+    "update_config": SAVED_PHRASE,
+    "delete_configs": SAVED_PHRASE,
+    "create_configs_from_files": SAVED_PHRASE,
+    "update_config_from_file": SAVED_PHRASE,
+    "stop_instances": DIRECT_PHRASE,
     "reload_instances": DIRECT_PHRASE,
-    "jobs_run": QUEUED_PHRASE,  # jobs.py:18-31 sets plugin change flags.
-    "ban_ip": DIRECT_PHRASE,  # bans.py:64 calls /ban on the instances.
-    "unban_ip": DIRECT_PHRASE,  # bans.py:235 calls /unban on the instances.
-    "cache_delete_bulk": QUEUED_PHRASE,  # cache.py:147-160 deletes rows and sets flags.
-    "cache_delete_file": QUEUED_PHRASE,  # cache.py:199-200 uses the same flagged deletion.
-    "plugins_upload": SAVED_PHRASE,  # plugins.py:227,280 stores plugin data in the DB.
-    "plugin_delete": SAVED_PHRASE,  # plugins.py:134 deletes from the DB with changes=True.
-    "instance_create": SAVED_PHRASE,  # instances.py:162 adds a DB instance record.
-    "instance_update": SAVED_PHRASE,  # instances.py:225 updates DB instance fields.
-    "instance_delete": SAVED_PHRASE,  # instances.py:257 deletes a DB instance record.
-    "instances_delete_bulk": SAVED_PHRASE,  # instances.py:299 deletes DB instance records.
+    "run_jobs": QUEUED_PHRASE,  # jobs.py:18-31 sets plugin change flags.
+    "ban_ips": DIRECT_PHRASE,  # bans.py:64 calls /ban on the instances.
+    "unban_ips": DIRECT_PHRASE,  # bans.py:235 calls /unban on the instances.
+    "delete_cache_files": QUEUED_PHRASE,  # cache.py:147-160 deletes rows and sets flags.
+    "install_plugins": SAVED_PHRASE,  # plugins.py:227,280 stores plugin data in the DB.
+    "uninstall_plugin": SAVED_PHRASE,  # plugins.py:134 deletes from the DB with changes=True.
+    "create_instance": SAVED_PHRASE,  # instances.py:162 adds a DB instance record.
+    "update_instance": SAVED_PHRASE,  # instances.py:225 updates DB instance fields.
+    "delete_instances": SAVED_PHRASE,  # instances.py:299 deletes DB instance records.
 }
 
 
@@ -76,25 +87,48 @@ def test_write_descriptions_state_timing() -> None:
     phrases = (SAVED_PHRASE, DIRECT_PHRASE, QUEUED_PHRASE)
     assert set(WRITE_TIMING) == {
         name for name, effect in TOOL_EFFECTS.items() if not effect.read_only
-    } - {"authenticate"}
-    for name, description in TOOL_DESCRIPTIONS.items():
+    } - {"create_api_token"}
+    for name, description in ALL_DESCRIPTIONS.items():
         if name in WRITE_TIMING:
             assert WRITE_TIMING[name] in description, name
             assert sum(description.count(phrase) for phrase in phrases) == 1, name
         else:
             assert not any(phrase in description for phrase in phrases), name
-    assert TOOL_DESCRIPTIONS["authenticate"] == (
-        "Returns a new BunkerWeb API token; changes nothing in the BunkerWeb configuration."
-    )
+    assert TOOL_DESCRIPTIONS["create_api_token"] == CREATE_API_TOKEN_DESCRIPTION
+
+
+def test_create_api_token_claims_no_expiry_field() -> None:
+    """POST /auth returns only the token (schemas/core.py AuthResponse); the lifetime is a server setting."""
+    description = TOOL_DESCRIPTIONS["create_api_token"]
+    assert "expires_at" not in description
+    assert "API_BISCUIT_TTL_SECONDS" in description
+    assert "credential" in description
+
+
+def test_redaction_names_are_registered_tools() -> None:
+    from bunkerweb_mcp.redaction import SETTINGS_WRITE_FIELDS
+
+    assert set(SETTINGS_WRITE_FIELDS) <= set(TOOL_DESCRIPTIONS)
+
+
+def test_cache_ttl_keys_are_registered_tools() -> None:
+    from bunkerweb_mcp.cache import CACHE_TTL
+
+    assert set(CACHE_TTL) <= set(TOOL_DESCRIPTIONS)
+
+
+def test_prompt_keys_are_registered_tools() -> None:
+    prompts = load_catalog(Settings()).descriptors()
+    assert set(prompts) <= set(TOOL_DESCRIPTIONS) | {"search_bunkerweb_docs"}
 
 
 def test_descriptions_are_short() -> None:
-    for name, description in TOOL_DESCRIPTIONS.items():
-        assert len(description) <= 240, name
+    for name, description in ALL_DESCRIPTIONS.items():
+        assert len(description) <= 300, name
 
 
 def test_reload_test_is_not_described_as_dry_run() -> None:
-    description = ReloadParams.model_fields["test"].description
+    description = ReloadInstancesParams.model_fields["test"].description
     assert description is not None
     assert "validation-only" not in description
     assert "still reloads" in description
@@ -109,7 +143,7 @@ def test_prompts_do_not_claim_automatic_application() -> None:
 
 
 def test_every_tool_has_an_effect() -> None:
-    names = set(TOOL_DESCRIPTIONS) | {"search_bunkerweb_docs", "diagnose"}
+    names = set(TOOL_DESCRIPTIONS) | {"search_bunkerweb_docs"}
     assert names == set(TOOL_EFFECTS)
 
 
@@ -131,7 +165,7 @@ def test_read_only_tools_drop_writes() -> None:
     tools = Tools(SimpleNamespace(), read_only=True)  # type: ignore[arg-type]
     assert tools.get_tool("get_service") is not None
     assert tools.get_tool("update_service") is None
-    assert tools.get_tool("authenticate") is None
+    assert tools.get_tool("create_api_token") is None
     assert all(effect_for(d["name"]).read_only for d in tools.list_descriptors())
 
 
@@ -145,12 +179,15 @@ def test_read_only_tools_drop_unclassified_tools(monkeypatch: pytest.MonkeyPatch
 def test_read_descriptions_only_name_writes_conditionally() -> None:
     """In read-only mode a read must not direct agents to a write tool as if it existed."""
     writes = {name for name, effect in TOOL_EFFECTS.items() if not effect.read_only}
-    for name, description in TOOL_DESCRIPTIONS.items():
+    for name, description in ALL_DESCRIPTIONS.items():
         if not effect_for(name).read_only:
             continue
         for write in writes:
-            if write in description:
-                assert f"{write} when writes are enabled" in description, (name, write)
+            if re.search(rf"\b{re.escape(write)}\b", description):
+                assert re.search(rf"\b{re.escape(write)} when writes are enabled", description), (
+                    name,
+                    write,
+                )
 
 
 SERVICE_CONFIG_PAYLOAD = {
@@ -201,9 +238,6 @@ class DummyClient:
     async def ping(self) -> PingResponse:
         return PingResponse(status="success", message="pong")
 
-    async def health(self) -> HealthResponse:
-        return HealthResponse(status="success", details={"status": "ok"})
-
     async def list_instances(self) -> ApiResponse:
         return ApiResponse(status="success", data=[{"hostname": "test"}])
 
@@ -235,19 +269,19 @@ class DummyClient:
 
 
 def test_list_descriptors_surface_prompts() -> None:
-    catalog = PromptCatalog({"ping": "sample prompt"})
+    catalog = PromptCatalog({"ping_api": "sample prompt"})
     tools = Tools(DummyClient(), prompt_catalog=catalog)  # type: ignore[arg-type]
 
     descriptors = tools.list_descriptors()
 
-    prompt_entry = next(item for item in descriptors if item["name"] == "ping")
+    prompt_entry = next(item for item in descriptors if item["name"] == "ping_api")
     assert prompt_entry["prompt"] == "sample prompt"
 
 
 @pytest.mark.asyncio
 async def test_ping_tool_success() -> None:
     tools = Tools(DummyClient())  # type: ignore[arg-type]
-    handler = tools.get_tool("ping")
+    handler = tools.get_tool("ping_api")
     assert handler is not None
     result = await handler({})
     assert result["message"] == "pong"
@@ -256,7 +290,7 @@ async def test_ping_tool_success() -> None:
 @pytest.mark.asyncio
 async def test_tool_validation_error() -> None:
     tools = Tools(DummyClient())  # type: ignore[arg-type]
-    handler = tools.get_tool("ban_ip")
+    handler = tools.get_tool("ban_ips")
     assert handler is not None
     with pytest.raises(ToolValidationError):
         await handler({"bans": []})
@@ -281,7 +315,7 @@ SIMPLE_TOOL_CASES: list[tuple[str, dict[str, Any], str, Any, tuple[Any, ...], di
         {},
     ),
     (
-        "instances_ping_all",
+        "ping_instances",
         {},
         "ping_instances",
         ApiResponse(status="success"),
@@ -289,15 +323,15 @@ SIMPLE_TOOL_CASES: list[tuple[str, dict[str, Any], str, Any, tuple[Any, ...], di
         {},
     ),
     (
-        "instances_stop_all",
-        {},
+        "stop_instances",
+        {"all": True},
         "stop_instances",
         ApiResponse(status="success"),
         (),
         {},
     ),
     (
-        "instance_get",
+        "get_instance",
         {"hostname": "edge"},
         "get_instance",
         InstancesResponse(status="success", data=[]),
@@ -305,7 +339,7 @@ SIMPLE_TOOL_CASES: list[tuple[str, dict[str, Any], str, Any, tuple[Any, ...], di
         {},
     ),
     (
-        "instance_ping",
+        "ping_instances",
         {"hostname": "edge"},
         "ping_instance",
         ApiResponse(status="success"),
@@ -313,7 +347,7 @@ SIMPLE_TOOL_CASES: list[tuple[str, dict[str, Any], str, Any, tuple[Any, ...], di
         {},
     ),
     (
-        "instance_stop",
+        "stop_instances",
         {"hostname": "edge"},
         "stop_instance",
         ApiResponse(status="success"),
@@ -321,28 +355,20 @@ SIMPLE_TOOL_CASES: list[tuple[str, dict[str, Any], str, Any, tuple[Any, ...], di
         {},
     ),
     (
-        "instance_delete",
-        {"hostname": "edge"},
-        "delete_instance",
+        "reload_instances",
+        {"all": True, "test": False},
+        "reload_instances",
+        ApiResponse(status="success"),
+        (),
+        {"test": False},
+    ),
+    (
+        "reload_instances",
+        {"hostname": "edge", "test": False},
+        "reload_instance",
         ApiResponse(status="success"),
         ("edge",),
-        {},
-    ),
-    (
-        "reload_instances",
         {"test": False},
-        "reload_instances",
-        ApiResponse(status="success"),
-        (),
-        {"test": False},
-    ),
-    (
-        "reload_instance",
-        {"hostname": "edge", "test": False},
-        "reload_instance",
-        ApiResponse(status="success"),
-        (),
-        {"hostname": "edge", "test": False},
     ),
     (
         "list_bans",
@@ -361,7 +387,7 @@ SIMPLE_TOOL_CASES: list[tuple[str, dict[str, Any], str, Any, tuple[Any, ...], di
         {"with_drafts": True},
     ),
     (
-        "global_config_read",
+        "get_global_config",
         {},
         "read_global_config",
         GlobalConfigResponse(status="success", data={}),
@@ -369,7 +395,7 @@ SIMPLE_TOOL_CASES: list[tuple[str, dict[str, Any], str, Any, tuple[Any, ...], di
         {"full": False, "methods": False},
     ),
     (
-        "cache_list",
+        "list_cache_files",
         {"plugin": "plug", "job_name": "job", "service": None, "with_data": True},
         "list_cache",
         ApiResponse(status="success", data=[]),
@@ -377,7 +403,7 @@ SIMPLE_TOOL_CASES: list[tuple[str, dict[str, Any], str, Any, tuple[Any, ...], di
         {"service": None, "plugin": "plug", "job_name": "job", "with_data": True},
     ),
     (
-        "jobs_list",
+        "list_jobs",
         {},
         "list_jobs",
         JobsResponse(status="success", data={}),
@@ -418,7 +444,7 @@ async def test_tools_delegate_simple_calls(
 async def test_authenticate_tool_success() -> None:
     client = SimpleNamespace(authenticate=AsyncMock(return_value=AuthResponse(token="biscuit")))
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("authenticate")
+    handler = tools.get_tool("create_api_token")
     assert handler is not None
 
     result = await handler(
@@ -442,7 +468,7 @@ async def test_instance_create_tool_builds_model() -> None:
         )
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("instance_create")
+    handler = tools.get_tool("create_instance")
     assert handler is not None
 
     result = await handler(
@@ -513,29 +539,12 @@ async def test_service_create_tool_builds_model() -> None:
 
 
 @pytest.mark.asyncio
-async def test_service_convert_tool_delegates() -> None:
-    client = SimpleNamespace(
-        convert_service=AsyncMock(return_value=ApiResponse(status="success", message="convert"))
-    )
-    tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("convert_service")
-    assert handler is not None
-
-    result = await handler({"service": "svc", "convert_to": "online"})
-
-    assert result["status"] == "success"
-    call = client.convert_service.await_args_list[0]
-    assert call.args[0] == "svc"
-    assert call.kwargs == {"convert_to": "online"}
-
-
-@pytest.mark.asyncio
 async def test_configs_delete_bulk_builds_request() -> None:
     client = SimpleNamespace(
         delete_configs=AsyncMock(return_value=ApiResponse(status="success", message="done"))
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("configs_delete_bulk")
+    handler = tools.get_tool("delete_configs")
     assert handler is not None
 
     payload: dict[str, Any] = {
@@ -560,7 +569,7 @@ async def test_cache_fetch_file_defaults_service() -> None:
         fetch_cache_file=AsyncMock(return_value={"status": "success", "data": "ok"})
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("cache_fetch_file")
+    handler = tools.get_tool("get_cache_file")
     assert handler is not None
 
     result = await handler(
@@ -592,7 +601,7 @@ async def test_instance_update_tool_excludes_hostname() -> None:
         update_instance=AsyncMock(return_value=InstancesResponse(status="success", data=[]))
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("instance_update")
+    handler = tools.get_tool("update_instance")
     assert handler is not None
 
     await handler({"hostname": "edge", "port": 8081})
@@ -610,7 +619,7 @@ async def test_instances_delete_tool_builds_request() -> None:
         delete_instances=AsyncMock(return_value=InstancesResponse(status="success", data=[]))
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("instances_delete_bulk")
+    handler = tools.get_tool("delete_instances")
     assert handler is not None
 
     await handler({"instances": ["a", "b"]})
@@ -624,7 +633,7 @@ async def test_instances_delete_tool_builds_request() -> None:
 async def test_ban_tool_converts_models() -> None:
     client = SimpleNamespace(ban=AsyncMock(return_value=BansResponse(status="success")))
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("ban_ip")
+    handler = tools.get_tool("ban_ips")
     assert handler is not None
 
     await handler({"bans": [{"ip": "1.2.3.4"}]})
@@ -637,7 +646,7 @@ async def test_ban_tool_converts_models() -> None:
 async def test_unban_tool_converts_models() -> None:
     client = SimpleNamespace(unban=AsyncMock(return_value=BansResponse(status="success")))
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("unban_ip")
+    handler = tools.get_tool("unban_ips")
     assert handler is not None
 
     await handler({"bans": [{"ip": "1.2.3.4"}]})
@@ -688,26 +697,12 @@ async def test_create_service_tool_builds_model() -> None:
 
 
 @pytest.mark.asyncio
-async def test_convert_service_tool_passes_params() -> None:
-    client = SimpleNamespace(convert_service=AsyncMock(return_value=ApiResponse(status="success")))
-    tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("convert_service")
-    assert handler is not None
-
-    await handler({"service": "svc", "convert_to": "draft"})
-
-    call = client.convert_service.await_args_list[0]
-    assert call.args[0] == "svc"
-    assert call.kwargs == {"convert_to": "draft"}
-
-
-@pytest.mark.asyncio
 async def test_global_config_update_tool() -> None:
     client = SimpleNamespace(
         update_global_config=AsyncMock(return_value=GlobalConfigResponse(status="success", data={}))
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("global_config_update")
+    handler = tools.get_tool("update_global_config")
     assert handler is not None
 
     await handler({"config": {"feature": True}})
@@ -722,7 +717,7 @@ async def test_configs_list_tool_passes_filters() -> None:
         list_configs=AsyncMock(return_value=ApiResponse(status="success", data=[]))
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("configs_list")
+    handler = tools.get_tool("list_configs")
     assert handler is not None
 
     await handler({"service": "svc", "type": "http", "with_data": True, "with_drafts": False})
@@ -742,7 +737,7 @@ async def test_config_get_tool_sets_with_data() -> None:
         get_config=AsyncMock(return_value=ApiResponse(status="success", data={}))
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("config_get")
+    handler = tools.get_tool("get_config")
     assert handler is not None
 
     await handler({"service": None, "type": "http", "name": "snippet"})
@@ -760,7 +755,7 @@ async def test_config_create_tool_builds_model() -> None:
         create_config=AsyncMock(return_value=ApiResponse(status="success", data={}))
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("config_create")
+    handler = tools.get_tool("create_config")
     assert handler is not None
 
     await handler(
@@ -785,7 +780,7 @@ async def test_config_update_tool_builds_models() -> None:
         update_config=AsyncMock(return_value=ApiResponse(status="success", data={}))
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("config_update")
+    handler = tools.get_tool("update_config")
     assert handler is not None
 
     await handler(
@@ -812,15 +807,17 @@ async def test_config_update_tool_builds_models() -> None:
 @pytest.mark.asyncio
 async def test_config_delete_tool_builds_key() -> None:
     client = SimpleNamespace(
-        delete_config=AsyncMock(return_value=ApiResponse(status="success", data={}))
+        delete_configs=AsyncMock(return_value=ApiResponse(status="success", data={}))
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("config_delete")
+    handler = tools.get_tool("delete_configs")
     assert handler is not None
 
-    await handler({"service": "svc", "type": "http", "name": "snippet"})
+    await handler({"configs": [{"service": "svc", "type": "http", "name": "snippet"}]})
 
-    key = client.delete_config.await_args_list[0].args[0]
+    request = client.delete_configs.await_args_list[0].args[0]
+    assert isinstance(request, ConfigsDeleteRequest)
+    key = request.configs[0]
     assert isinstance(key, ConfigKey)
     assert key.name == "snippet"
 
@@ -831,7 +828,7 @@ async def test_configs_upload_tool_decodes_files() -> None:
         upload_configs=AsyncMock(return_value=ApiResponse(status="success", data={}))
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("configs_upload")
+    handler = tools.get_tool("create_configs_from_files")
     assert handler is not None
 
     await handler(
@@ -856,7 +853,7 @@ async def test_config_upload_update_tool_handles_rename() -> None:
         update_config_upload=AsyncMock(return_value=ApiResponse(status="success", data={}))
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("config_upload_update")
+    handler = tools.get_tool("update_config_from_file")
     assert handler is not None
 
     await handler(
@@ -886,7 +883,7 @@ async def test_plugins_list_tool_passes_filters() -> None:
         list_plugins=AsyncMock(return_value=PluginsResponse(status="success", data=[]))
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("plugins_list")
+    handler = tools.get_tool("list_plugins")
     assert handler is not None
 
     await handler({"type": "external", "with_data": True})
@@ -901,7 +898,7 @@ async def test_plugins_upload_tool_transforms_files() -> None:
         upload_plugins=AsyncMock(return_value=PluginsResponse(status="success", data=[]))
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("plugins_upload")
+    handler = tools.get_tool("install_plugins")
     assert handler is not None
 
     await handler(
@@ -921,7 +918,7 @@ async def test_plugins_upload_tool_transforms_files() -> None:
 async def test_plugin_delete_tool_calls_client() -> None:
     client = SimpleNamespace(delete_plugin=AsyncMock(return_value=ApiResponse(status="success")))
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("plugin_delete")
+    handler = tools.get_tool("uninstall_plugin")
     assert handler is not None
 
     await handler({"plugin_id": "plug"})
@@ -936,7 +933,7 @@ async def test_cache_delete_bulk_tool_builds_models() -> None:
         delete_cache_files=AsyncMock(return_value=ApiResponse(status="success"))
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("cache_delete_bulk")
+    handler = tools.get_tool("delete_cache_files")
     assert handler is not None
 
     await handler(
@@ -958,28 +955,227 @@ async def test_cache_delete_bulk_tool_builds_models() -> None:
 
 
 @pytest.mark.asyncio
-async def test_cache_delete_file_defaults_service() -> None:
+async def test_cache_delete_without_service_sends_global_key() -> None:
     client = SimpleNamespace(
-        delete_cache_file=AsyncMock(return_value=ApiResponse(status="success"))
+        delete_cache_files=AsyncMock(return_value=ApiResponse(status="success"))
     )
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("cache_delete_file")
+    handler = tools.get_tool("delete_cache_files")
     assert handler is not None
 
-    await handler({"service": None, "plugin": "plug", "job_name": "job", "file_name": "file"})
+    await handler(
+        {"files": [{"service": None, "plugin": "plug", "job_name": "job", "file_name": "f"}]}
+    )
 
-    call = client.delete_cache_file.await_args_list[0]
-    assert call.kwargs["service"] == "global"
+    key = client.delete_cache_files.await_args_list[0].args[0].cache_files[0]
+    assert key.service is None  # the API reads a missing service as "global"
 
 
 @pytest.mark.asyncio
 async def test_jobs_run_tool_builds_models() -> None:
     client = SimpleNamespace(run_jobs=AsyncMock(return_value=ApiResponse(status="success")))
     tools = Tools(client)  # type: ignore[arg-type]
-    handler = tools.get_tool("jobs_run")
+    handler = tools.get_tool("run_jobs")
     assert handler is not None
 
     await handler({"jobs": [{"plugin": "plug", "name": "job"}]})
 
     request = client.run_jobs.await_args_list[0].args[0]
     assert request.jobs[0].plugin == "plug"
+
+
+EXPECTED_TOOLS = {
+    "create_api_token",
+    "ping_api",
+    "diagnose_bunkerweb",
+    "list_instances",
+    "get_instance",
+    "create_instance",
+    "update_instance",
+    "delete_instances",
+    "ping_instances",
+    "stop_instances",
+    "reload_instances",
+    "list_bans",
+    "ban_ips",
+    "unban_ips",
+    "list_services",
+    "get_service",
+    "create_service",
+    "update_service",
+    "delete_service",
+    "get_global_config",
+    "update_global_config",
+    "list_configs",
+    "get_config",
+    "create_config",
+    "create_configs_from_files",
+    "update_config",
+    "update_config_from_file",
+    "delete_configs",
+    "list_plugins",
+    "install_plugins",
+    "uninstall_plugin",
+    "list_cache_files",
+    "get_cache_file",
+    "delete_cache_files",
+    "list_jobs",
+    "run_jobs",
+}
+REMOVED_TOOLS = {
+    "authenticate",
+    "ping",
+    "health",
+    "diagnose",
+    "instance_get",
+    "instance_create",
+    "instance_update",
+    "instance_delete",
+    "instances_delete_bulk",
+    "instance_ping",
+    "instances_ping_all",
+    "instance_stop",
+    "instances_stop_all",
+    "reload_instance",
+    "ban_ip",
+    "unban_ip",
+    "convert_service",
+    "global_config_read",
+    "global_config_update",
+    "configs_list",
+    "config_get",
+    "config_create",
+    "configs_upload",
+    "config_update",
+    "config_upload_update",
+    "config_delete",
+    "configs_delete_bulk",
+    "plugins_list",
+    "plugins_upload",
+    "plugin_delete",
+    "cache_list",
+    "cache_fetch_file",
+    "cache_delete_file",
+    "cache_delete_bulk",
+    "jobs_list",
+    "jobs_run",
+    "logs_list",
+    "logs_read",
+    "ping_instance",
+    "stop_instance",
+    "delete_instance",
+    "delete_config",
+    "delete_cache_file",
+}
+
+
+def test_registered_tool_names(tmp_path: Path) -> None:
+    descriptors = Tools(SimpleNamespace(), logs_path=tmp_path).list_descriptors()  # type: ignore[arg-type]
+    names = {d["name"] for d in descriptors}
+    assert names == EXPECTED_TOOLS | {"list_logs", "read_log"}
+    assert not names & REMOVED_TOOLS
+    without_logs = {d["name"] for d in Tools(SimpleNamespace()).list_descriptors()}  # type: ignore[arg-type]
+    assert without_logs == EXPECTED_TOOLS
+
+
+@pytest.mark.parametrize("tool", ["stop_instances", "reload_instances"])
+@pytest.mark.parametrize(
+    "payload",
+    [{}, {"all": False}, {"hostname": "bw-1", "all": True}, {"hostname": ""}],
+)
+@pytest.mark.asyncio
+async def test_instance_target_needs_exactly_one(tool: str, payload: dict[str, Any]) -> None:
+    client = AsyncMock()
+    handler = Tools(client).get_tool(tool)
+    assert handler is not None
+    with pytest.raises(ToolValidationError, match="hostname"):
+        await handler(payload)
+    assert client.method_calls == []
+
+
+@pytest.mark.asyncio
+async def test_reload_with_only_test_flag_names_both_targets() -> None:
+    client = AsyncMock()
+    handler = Tools(client).get_tool("reload_instances")
+    assert handler is not None
+    with pytest.raises(ToolValidationError, match=r"hostname or all"):
+        await handler({"test": False})
+    assert client.method_calls == []
+
+
+@pytest.mark.asyncio
+async def test_ping_instances_routes_by_hostname() -> None:
+    client = SimpleNamespace(
+        ping_instance=AsyncMock(return_value=ApiResponse(status="success", message="one")),
+        ping_instances=AsyncMock(return_value=ApiResponse(status="success", message="all")),
+    )
+    handler = Tools(client).get_tool("ping_instances")  # type: ignore[arg-type]
+    assert handler is not None
+    assert (await handler({"hostname": "bw-1"}))["message"] == "one"
+    client.ping_instance.assert_awaited_once_with("bw-1")
+    client.ping_instances.assert_not_awaited()
+    assert (await handler({}))["message"] == "all"
+    client.ping_instances.assert_awaited_once_with()
+    with pytest.raises(ToolValidationError):
+        await handler({"hostname": ""})
+
+
+@pytest.mark.asyncio
+async def test_stop_and_reload_route_by_target() -> None:
+    ok = ApiResponse(status="success")
+    client = SimpleNamespace(
+        stop_instance=AsyncMock(return_value=ok),
+        stop_instances=AsyncMock(return_value=ok),
+        reload_instance=AsyncMock(return_value=ok),
+        reload_instances=AsyncMock(return_value=ok),
+    )
+    tools = Tools(client)  # type: ignore[arg-type]
+    stop = tools.get_tool("stop_instances")
+    reload = tools.get_tool("reload_instances")
+    assert stop is not None and reload is not None
+
+    await stop({"hostname": "bw-1"})
+    client.stop_instance.assert_awaited_once_with("bw-1")
+    client.stop_instances.assert_not_awaited()
+    await stop({"all": True})
+    client.stop_instances.assert_awaited_once_with()
+
+    await reload({"hostname": "bw-1", "test": False})
+    client.reload_instance.assert_awaited_once_with("bw-1", test=False)
+    client.reload_instances.assert_not_awaited()
+    await reload({"all": True})
+    client.reload_instances.assert_awaited_once_with(test=True)
+
+
+@pytest.mark.asyncio
+async def test_single_item_delete_uses_bulk_endpoint() -> None:
+    ok = ApiResponse(status="success")
+    client = SimpleNamespace(
+        delete_instances=AsyncMock(return_value=ok),
+        delete_configs=AsyncMock(return_value=ok),
+        delete_cache_files=AsyncMock(return_value=ok),
+    )
+    tools = Tools(client)  # type: ignore[arg-type]
+    delete_instances = tools.get_tool("delete_instances")
+    delete_configs = tools.get_tool("delete_configs")
+    delete_cache_files = tools.get_tool("delete_cache_files")
+    assert delete_instances and delete_configs and delete_cache_files
+
+    await delete_instances({"instances": ["bw-1"]})
+    await delete_configs({"configs": [{"service": "svc", "type": "http", "name": "one"}]})
+    await delete_cache_files({"files": [{"plugin": "p", "job_name": "j", "file_name": "f"}]})
+    for method in (client.delete_instances, client.delete_configs, client.delete_cache_files):
+        method.assert_awaited_once()
+    for tool, payload in (
+        (delete_instances, {"instances": []}),
+        (delete_configs, {"configs": []}),
+        (delete_cache_files, {"files": []}),
+    ):
+        with pytest.raises(ToolValidationError):
+            await tool(payload)
+
+
+def test_read_only_tool_set() -> None:
+    names = {d["name"] for d in Tools(SimpleNamespace(), read_only=True).list_descriptors()}  # type: ignore[arg-type]
+    expected = {n for n in EXPECTED_TOOLS if n.startswith(("list_", "get_", "ping_"))}
+    assert names == expected | {"diagnose_bunkerweb"}

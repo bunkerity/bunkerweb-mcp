@@ -324,7 +324,7 @@ async def test_global_config_update_with_sensitive_key_is_refused() -> None:
     with pytest.raises(ToolValidationError, match="www.example.com_REDIS_PASSWORD"):
         await _call(
             _tools(client),
-            "global_config_update",
+            "update_global_config",
             {"config": {"www.example.com_REDIS_PASSWORD": FAKE_SECRET, "USE_REDIS": "yes"}},
         )
 
@@ -336,17 +336,17 @@ async def test_global_config_update_with_sensitive_key_is_refused() -> None:
     ("tool", "payload", "client_method"),
     [
         (
-            "config_create",
+            "create_config",
             {"type": "http", "name": "snippet", "data": f"set $token {REDACTED};"},
             "create_config",
         ),
         (
-            "config_update",
+            "update_config",
             {"type": "http", "name": "snippet", "data": f"set $token {REDACTED};"},
             "update_config",
         ),
         (
-            "configs_upload",
+            "create_configs_from_files",
             {
                 "config_type": "http",
                 "files": [
@@ -361,7 +361,7 @@ async def test_global_config_update_with_sensitive_key_is_refused() -> None:
             "upload_configs",
         ),
         (
-            "config_upload_update",
+            "update_config_from_file",
             {
                 "type": "http",
                 "name": "snippet",
@@ -433,7 +433,7 @@ async def test_non_sensitive_write_is_forwarded() -> None:
     )
     await _call(
         tools,
-        "configs_upload",
+        "create_configs_from_files",
         {
             "config_type": "http",
             "files": [{"filename": "a.conf", "content_base64": "Y29udGVudA=="}],
@@ -468,7 +468,7 @@ async def test_cache_fetch_of_sensitive_files_is_refused(plugin: str, file_name:
     with pytest.raises(ToolValidationError, match="private keys or credentials"):
         await _call(
             _tools(client),
-            "cache_fetch_file",
+            "get_cache_file",
             {"plugin": plugin, "job_name": "job", "file_name": file_name},
         )
 
@@ -483,7 +483,7 @@ async def test_cache_fetch_of_other_files_is_forwarded() -> None:
 
     result = await _call(
         _tools(client),
-        "cache_fetch_file",
+        "get_cache_file",
         {"plugin": "blacklist", "job_name": "blacklist-download", "file_name": "ip.list"},
     )
 
@@ -503,7 +503,7 @@ async def test_cache_list_masks_sensitive_entries() -> None:
         list_cache=AsyncMock(return_value=ApiResponse(status="success", data=entries))
     )
 
-    result = await _call(_tools(client), "cache_list", {"with_data": True})
+    result = await _call(_tools(client), "list_cache_files", {"with_data": True})
 
     assert [entry["data"] for entry in result["data"]] == [REDACTED, REDACTED, "", "1.2.3.4"]
     assert result["data"][0]["file_name"] == "credentials_abc.ini"
@@ -523,7 +523,7 @@ async def test_cache_list_masks_nested_sensitive_entries() -> None:
         list_cache=AsyncMock(return_value=ApiResponse(status="success", data=entries))
     )
 
-    result = await _call(_tools(client), "cache_list", {"with_data": True})
+    result = await _call(_tools(client), "list_cache_files", {"with_data": True})
 
     assert result["data"] == [
         {
@@ -541,7 +541,7 @@ async def test_authenticate_token_is_redacted() -> None:
         authenticate=AsyncMock(return_value=AuthResponse(status="success", token=FAKE_SECRET))
     )
 
-    result = await _call(_tools(client), "authenticate", {"username": "admin"})
+    result = await _call(_tools(client), "create_api_token", {"username": "admin"})
 
     assert result == {"status": "success", "token": REDACTED}
 
@@ -571,7 +571,7 @@ async def test_mcp_tool_call_reports_refused_write() -> None:
     server = create_fastmcp_server(Settings(SEARCH_MODE="disabled"), _tools(client))
 
     with pytest.raises(ToolError, match="SESSIONS_SECRET") as excinfo:
-        await server.call_tool("global_config_update", {"config": {"SESSIONS_SECRET": FAKE_SECRET}})
+        await server.call_tool("update_global_config", {"config": {"SESSIONS_SECRET": FAKE_SECRET}})
 
     assert FAKE_SECRET not in str(excinfo.value)
     client.update_global_config.assert_not_awaited()
@@ -582,7 +582,7 @@ def test_malformed_base64_upload_is_left_to_the_handler() -> None:
         {"config_type": "http", "files": [{"filename": "a.conf", "content_base64": "abcde"}]}
     )
 
-    assert POLICY.find_sensitive_write("configs_upload", params) == []
+    assert POLICY.find_sensitive_write("create_configs_from_files", params) == []
 
 
 def test_policy_from_settings_disabled_by_default() -> None:
@@ -647,7 +647,7 @@ async def test_cache_alias_inputs_never_reach_upstream(
         with pytest.raises(ToolValidationError):
             await _call(
                 _tools(client),
-                "cache_fetch_file",
+                "get_cache_file",
                 {"plugin": plugin, "job_name": job_name, "file_name": file_name},
             )
         await client.close()
@@ -719,19 +719,19 @@ async def _wire_text(app: FastAPI, path: str) -> str:
     """Return the raw reply of one global-config read over the given transport."""
     if path == "ws":
         async with WebSocketSession(app, "/ws") as ws:
-            await ws.send_json({"id": 1, "tool": "global_config_read", "params": {}})
+            await ws.send_json({"id": 1, "tool": "get_global_config", "params": {}})
             return await ws.receive_text()
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app), base_url="http://testserver"
     ) as http:
         if path == "rpc":
             response = await http.post(
-                "/rpc", json={"id": 1, "tool": "global_config_read", "params": {}}
+                "/rpc", json={"id": 1, "tool": "get_global_config", "params": {}}
             )
             assert response.status_code == 502
             return response.text
         method, params = (
-            ("tools/call", {"name": "global_config_read", "arguments": {}})
+            ("tools/call", {"name": "get_global_config", "arguments": {}})
             if path == "mcp-tool"
             else ("resources/read", {"uri": "config://global"})
         )
@@ -799,7 +799,7 @@ async def test_invalid_upstream_payload_is_generic(
     async with _upstream_client(settings, handler) as client:
         server = create_fastmcp_server(settings, _tools(client))
         with pytest.raises(ToolError) as excinfo:
-            await server.call_tool("global_config_read", {})
+            await server.call_tool("get_global_config", {})
 
     assert str(excinfo.value).endswith("Unexpected tool execution error")
     assert UPSTREAM_SECRET not in str(excinfo.value)
@@ -814,7 +814,7 @@ async def test_local_error_message_passes_through(caplog: pytest.LogCaptureFixtu
     )
 
     with pytest.raises(ToolExecutionError, match="Ban payload must not be empty"):
-        await _call(_tools(client), "ban_ip", {"bans": [{"ip": "192.0.2.1"}]})
+        await _call(_tools(client), "ban_ips", {"bans": [{"ip": "192.0.2.1"}]})
 
     _assert_nothing_logged(caplog)
 
@@ -834,7 +834,7 @@ async def test_withheld_error_drops_cause(caplog: pytest.LogCaptureFixture) -> N
         read_global_config=AsyncMock(side_effect=RuntimeError(UPSTREAM_SECRET))
     )
     _, model, handler, _, _ = next(
-        entry for entry in _tools(client).iter_registered() if entry[0] == "global_config_read"
+        entry for entry in _tools(client).iter_registered() if entry[0] == "get_global_config"
     )
 
     with pytest.raises(ToolExecutionError) as excinfo:
@@ -860,7 +860,7 @@ async def test_nonstandard_upstream_status_keeps_the_status(
     async with _upstream_client(settings, handler) as client:
         server = create_fastmcp_server(settings, _tools(client, policy_from_settings(settings)))
         with pytest.raises(ToolError) as excinfo:
-            await server.call_tool("global_config_read", {})
+            await server.call_tool("get_global_config", {})
 
     message = str(excinfo.value)
     if redact:

@@ -149,26 +149,31 @@ async def test_http_protocol_auth_security_resources_and_search(monkeypatch, tmp
 
             tools = (await rpc("tools/list"))["result"]["tools"]
             by_name = {tool["name"]: tool for tool in tools}
-            assert "outputSchema" not in by_name["logs_read"]
+            assert "outputSchema" not in by_name["read_log"]
             assert "outputSchema" in by_name["search_bunkerweb_docs"]
             called = (
-                await rpc("tools/call", {"name": "logs_read", "arguments": {"source": "api.log"}})
+                await rpc("tools/call", {"name": "read_log", "arguments": {"source": "api.log"}})
             )["result"]
             assert not called["isError"]
             assert "structuredContent" not in called
             assert json.loads(called["content"][0]["text"])["lines"] == ["ready"]
-            invalid = (await rpc("tools/call", {"name": "logs_read", "arguments": {}}))["result"]
+            invalid = (await rpc("tools/call", {"name": "read_log", "arguments": {}}))["result"]
             assert invalid["isError"]
             unknown = (
                 await rpc(
-                    "tools/call", {"name": "logs_read", "arguments": {"source": "unknown.log"}}
+                    "tools/call", {"name": "read_log", "arguments": {"source": "unknown.log"}}
                 )
             )["result"]
             assert unknown["isError"] and "Unknown log source" in str(unknown)
+            removed = (
+                await rpc("tools/call", {"name": "instance_get", "arguments": {"hostname": "x"}})
+            )["result"]
+            assert removed["isError"] and "Unknown tool" in str(removed)
+            assert "instance_get" not in by_name and "health" not in by_name
 
             prompts = (await rpc("prompts/list"))["result"]["prompts"]
-            assert "logs_read" in {prompt["name"] for prompt in prompts}
-            prompt = (await rpc("prompts/get", {"name": "logs_read"}))["result"]
+            assert "read_log" in {prompt["name"] for prompt in prompts}
+            prompt = (await rpc("prompts/get", {"name": "read_log"}))["result"]
             assert prompt["messages"][0]["role"] == "user"
             assert prompt["messages"][0]["content"]["text"]
             resources = (await rpc("resources/list"))["result"]["resources"]
@@ -228,7 +233,7 @@ async def test_http_protocol_auth_security_resources_and_search(monkeypatch, tmp
                 (RuntimeError("private-detail"), False),
             ]:
                 upstream.ping.side_effect = error
-                failure = (await rpc("tools/call", {"name": "ping", "arguments": {}}))["result"]
+                failure = (await rpc("tools/call", {"name": "ping_api", "arguments": {}}))["result"]
                 assert failure["isError"]
                 assert (str(error) in str(failure)) is visible
                 upstream.list_jobs.side_effect = error
@@ -288,9 +293,9 @@ async def test_stdio_initialize_list_call_and_shutdown(tmp_path):
         process.stdin.write(b'{"jsonrpc":"2.0","method":"notifications/initialized"}\n')
         await process.stdin.drain()
         tools = (await rpc("tools/list"))["result"]["tools"]
-        assert "logs_read" in {tool["name"] for tool in tools}
+        assert "read_log" in {tool["name"] for tool in tools}
         result = (
-            await rpc("tools/call", {"name": "logs_read", "arguments": {"source": "api.log"}})
+            await rpc("tools/call", {"name": "read_log", "arguments": {"source": "api.log"}})
         )["result"]
         assert not result["isError"]
         assert "structuredContent" not in result

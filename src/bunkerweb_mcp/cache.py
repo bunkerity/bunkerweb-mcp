@@ -16,15 +16,15 @@ cache = Cache(Cache.MEMORY, serializer=JsonSerializer())
 CACHE_TTL = {
     "list_services": 300,  # 5 minutes
     "get_service": 300,  # 5 minutes
-    "global_config_read": 600,  # 10 minutes
+    "get_global_config": 600,  # 10 minutes
     "list_instances": 60,  # 1 minute
-    "instance_get": 60,  # 1 minute
+    "get_instance": 60,  # 1 minute
     "list_bans": 30,  # 30 seconds
-    "configs_list": 300,  # 5 minutes
-    "config_get": 300,  # 5 minutes
-    "plugins_list": 600,  # 10 minutes
-    "cache_list": 120,  # 2 minutes
-    "jobs_list": 120,  # 2 minutes
+    "list_configs": 300,  # 5 minutes
+    "get_config": 300,  # 5 minutes
+    "list_plugins": 600,  # 10 minutes
+    "list_cache_files": 120,  # 2 minutes
+    "list_jobs": 120,  # 2 minutes
 }
 
 

@@ -27,6 +27,7 @@ An Architecture Decision Record (ADR) is a document that captures an important a
 | [0004](0004-async-httpx-client.md) | Use Async HTTPX Client for API Calls | Accepted | 2024-12-01 |
 | [0005](0005-secret-redaction.md) | Optional Secret Redaction at the Tool Registry | Proposed | 2026-10-08 |
 | [0006](0006-tool-effects-and-read-only-mode.md) | Tool Effects and Read-Only Mode | Proposed | 2026-10-20 |
+| [0007](0007-verb-noun-tool-names.md) | One verb_noun Scheme for Tool Names | Accepted | 2026-11-03 |
 
 ## ADR Creation Process
 

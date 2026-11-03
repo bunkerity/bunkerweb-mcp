@@ -40,7 +40,7 @@ literally, so the real secret would be overwritten.
 
 For detecting secrets:
 
-- **Load `type: "password"` settings from `plugins_list` at startup**
+- **Load `type: "password"` settings from `list_plugins` at startup**
   - Advantages: Follows upstream metadata, including external plugins
   - Disadvantages: Startup depends on the API being reachable and the call succeeding; a
     failed load silently disables protection; misses non-password secrets (`*_KEY_DATA`
@@ -55,13 +55,13 @@ For detecting secrets:
 Option 3, with a static pattern. `BUNKERWEB_REDACT_SECRETS` (default `false`) builds a
 `RedactionPolicy` (`redaction.py`) that `Tools` uses to wrap every handler:
 
-1. Before the call: refuse `create_service` / `update_service` / `global_config_update`
+1. Before the call: refuse `create_service` / `update_service` / `update_global_config`
    when they set a sensitive key; refuse any call whose parameters contain the
-   `***REDACTED***` placeholder (base64 uploads are decoded); refuse `cache_fetch_file` on
+   `***REDACTED***` placeholder (base64 uploads are decoded); refuse `get_cache_file` on
    sensitive cache files.
 2. After the call: mask the values of sensitive keys (only `value`/`default` in the
-   `methods=true` shape, empty values kept), the data of sensitive `cache_list` entries,
-   and the `authenticate` token.
+   `methods=true` shape, empty values kept), the data of sensitive `list_cache_files` entries,
+   and the `create_api_token` token.
 
 The default pattern was checked against the 518 settings of BunkerWeb 1.6.15
 (`src/common/core/*/plugin.json` and `settings.json`). It matches all 23 settings typed
@@ -86,7 +86,7 @@ refusing sensitive keys does not delete existing secrets.
 ### Positive
 
 - When enabled, sensitive setting values are masked, denylisted job-cache files are refused and upstream error
-  bodies are withheld before results reach LLM clients. `logs_read` output and documentation search stay outside
+  bodies are withheld before results reach LLM clients. `read_log` output and documentation search stay outside
   this boundary (see [Secret redaction](../security.md#secret-redaction))
 - One wrapper in the tool registry covers every registry consumer (`/rpc`, `/ws`, MCP tools and the MCP
   resources); tools registered outside the registry are not covered
@@ -106,8 +106,8 @@ refusing sensitive keys does not delete existing secrets.
 
 - The guarantee is masking by setting name, in tool results and resources, plus withheld
   upstream error bodies. It is not a content scanner. The exceptions are documented in the
-  Security Guide: custom configuration snippets (`config_get`, `configs_list` with
-  `with_data`), `logs_read` lines, documentation search results (public documentation from a
+  Security Guide: custom configuration snippets (`get_config`, `list_configs` with
+  `with_data`), `read_log` lines, documentation search results (public documentation from a
   separate service, registered outside the registry), cache files outside the plugin and
   file-name denylist, and secrets embedded in non-sensitive values (credentials in a URL)
 - A custom `BUNKERWEB_REDACT_PATTERN` with nested quantifiers (`(a+)+$`) can backtrack

@@ -1,4 +1,4 @@
-"""Core API handlers: ping, health, authenticate."""
+"""Core API handlers: ping_api, create_api_token."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ def _serialize_response(response: BaseModel) -> dict[str, Any]:
     return response.model_dump(mode="json", exclude_none=True)
 
 
-async def handle_ping(client: BunkerWebClientProtocol, params: EmptyParams) -> dict[str, Any]:
+async def handle_ping_api(client: BunkerWebClientProtocol, params: EmptyParams) -> dict[str, Any]:
     """Check if the BunkerWeb API is reachable.
 
     This tool performs a lightweight connectivity check to verify that the
@@ -34,47 +34,23 @@ async def handle_ping(client: BunkerWebClientProtocol, params: EmptyParams) -> d
         ToolExecutionError: If network error occurs or API is unreachable
 
     Examples:
-        >>> await handle_ping(client, EmptyParams())
+        >>> await handle_ping_api(client, EmptyParams())
         {"status": "pong", "timestamp": "2024-01-15T10:30:00Z"}
     """
     response = await client.ping()
     return _serialize_response(response)
 
 
-async def handle_health(client: BunkerWebClientProtocol, params: EmptyParams) -> dict[str, Any]:
-    """Retrieve the lightweight health probe from the API.
-
-    This tool provides detailed health status information about the
-    BunkerWeb API, including service availability and dependency checks.
-
-    Args:
-        client: BunkerWeb API client instance
-        params: Empty parameters (no input required)
-
-    Returns:
-        API response dict with:
-            - status: Overall health status ("healthy", "degraded", "unhealthy")
-            - checks: Individual component health checks
-            - uptime: Service uptime information
-
-    Raises:
-        ToolExecutionError: If API is unreachable or health check fails
-
-    Examples:
-        >>> await handle_health(client, EmptyParams())
-        {"status": "healthy", "checks": {...}, "uptime": "72h"}
-    """
-    response = await client.health()
-    return _serialize_response(response)
-
-
-async def handle_authenticate(
+async def handle_create_api_token(
     client: BunkerWebClientProtocol, params: AuthParams
 ) -> dict[str, Any]:
-    """Authenticate against /auth to obtain a Biscuit token.
+    """Create a Biscuit API token through POST /auth.
 
-    This tool performs authentication with the BunkerWeb API using either
-    HTTP Basic auth or custom payload authentication to obtain session tokens.
+    Sends the given username and password (or the client's own credentials when
+    both are omitted) to BunkerWeb and returns the token. Other tools do not
+    need it: the server authenticates every call itself. The token is a live
+    credential; BunkerWeb ends its life after API_BISCUIT_TTL_SECONDS, and the
+    response carries no expiry field. Needs an API user on BunkerWeb.
 
     Args:
         client: BunkerWeb API client instance
@@ -85,20 +61,18 @@ async def handle_authenticate(
 
     Returns:
         API response dict with:
-            - status: Authentication status
-            - token: Biscuit token for subsequent API calls
-            - expires_at: Token expiration timestamp
+            - token: Biscuit token (masked when BUNKERWEB_REDACT_SECRETS=true)
 
     Raises:
         ToolExecutionError: If authentication fails or credentials are invalid
         ToolValidationError: If auth parameters are malformed
 
     Examples:
-        >>> await handle_authenticate(client, AuthParams(
+        >>> await handle_create_api_token(client, AuthParams(
         ...     username="admin",
         ...     password="secret"
         ... ))
-        {"status": "success", "token": "biscuit_token_here"}
+        {"token": "biscuit_token_here"}
     """
     response = await client.authenticate(
         username=params.username,

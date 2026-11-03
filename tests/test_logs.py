@@ -99,11 +99,11 @@ async def test_log_tools_are_opt_in_and_reject_unknown_sources(tmp_path: Path) -
     _write(root / "api.log", b"safe\n")
     client = SimpleNamespace()
 
-    assert Tools(client).get_tool("logs_list") is None  # type: ignore[arg-type]
+    assert Tools(client).get_tool("list_logs") is None  # type: ignore[arg-type]
 
     tools = Tools(client, logs_path=root)  # type: ignore[arg-type]
-    assert tools.get_tool("logs_list") is not None
-    read = tools.get_tool("logs_read")
+    assert tools.get_tool("list_logs") is not None
+    read = tools.get_tool("read_log")
     assert read is not None
     with pytest.raises(ToolExecutionError, match="Unknown log source"):
         await read({"source": "../secret.log"})

@@ -171,7 +171,7 @@ Would you like me to reload now?
 You: Ban IP 192.168.1.100 for 1 hour due to brute force attempt
 
 Agent: I'm banning IP 192.168.1.100 for 1 hour...
-[Uses ban_ip]
+[Uses ban_ips]
 
 ✅ 1 IP banned successfully:
 

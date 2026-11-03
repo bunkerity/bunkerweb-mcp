@@ -18,7 +18,7 @@
         "url": "http://bw-mcp:8080/rpc",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\"tool\": \"global_config_read\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {\n    \"full\": {{ $json.query?.full || $json.full || false }},\n    \"methods\": {{ $json.query?.methods || $json.methods || false }}\n  }\n}",
+        "jsonBody": "={\"tool\": \"get_global_config\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {\n    \"full\": {{ $json.query?.full || $json.full || false }},\n    \"methods\": {{ $json.query?.methods || $json.methods || false }}\n  }\n}",
         "options": {
           "timeout": 10000
         }

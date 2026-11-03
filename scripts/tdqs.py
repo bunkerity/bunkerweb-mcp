@@ -7,7 +7,7 @@
 
 Run it with the project virtualenv. Arguments after the subcommand go to the `tdqs` CLI
 (`--format markdown`, `--output report.json`, `--fail-under B`, `--hosted https://tdqs.dev`).
-The tools/list payload matches what Glama scores: the 44 registry tools plus
+The tools/list payload matches what Glama scores: the 36 registry tools plus
 `search_bunkerweb_docs`, without the log tools, whatever `.env` or the environment says.
 
 `score` defaults to the free `gpt-oss:20b-cloud` model through a local Ollama signed in to

@@ -17,7 +17,6 @@ if TYPE_CHECKING:
         DeleteServiceParams,
         GetServiceParams,
         ListServicesParams,
-        ServiceConvertParams,
         ServiceCreateParams,
         ServiceUpdateParams,
     )
@@ -255,44 +254,6 @@ async def handle_delete_service(
         {"status": "deleted", "service": "old.example.com"}
     """
     response = await client.delete_service(params.service)
-    # Invalidate service cache after mutation
-    await invalidate_cache("services")
-    return _serialize_response(response)
-
-
-async def handle_convert_service(
-    client: BunkerWebClientProtocol, params: ServiceConvertParams
-) -> dict[str, Any]:
-    """Convert a service between draft and online states.
-
-    This tool toggles a service between draft (testing) and online (live)
-    states. Converting to online publishes the service configuration.
-    Invalidates service cache after mutation.
-
-    Args:
-        client: BunkerWeb API client instance
-        params: Parameters containing:
-            - service: Service identifier
-            - convert_to: Target state ("online" or "draft")
-
-    Returns:
-        API response dict with:
-            - status: Conversion status
-            - service: Service identifier
-            - new_state: Final state after conversion
-
-    Raises:
-        ToolExecutionError: If service not found or conversion fails
-        ToolValidationError: If convert_to is not "online" or "draft"
-
-    Examples:
-        >>> await handle_convert_service(client, ServiceConvertParams(
-        ...     service="test.example.com",
-        ...     convert_to="online"
-        ... ))
-        {"status": "success", "new_state": "online"}
-    """
-    response = await client.convert_service(params.service, convert_to=params.convert_to)
     # Invalidate service cache after mutation
     await invalidate_cache("services")
     return _serialize_response(response)

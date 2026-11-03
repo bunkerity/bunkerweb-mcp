@@ -10,7 +10,7 @@ import pytest
 from bunkerweb_mcp.tools.registry import TOOL_DESCRIPTIONS
 
 SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "tdqs.py"
-LOG_TOOLS = {"logs_list", "logs_read"}
+LOG_TOOLS = {"list_logs", "read_log"}
 
 
 def _load() -> ModuleType:

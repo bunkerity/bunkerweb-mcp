@@ -3,7 +3,7 @@
 This package contains the refactored tool implementations, split into logical modules:
 
 - params: Parameter models and client protocol
-- core_handlers: ping, health, authenticate
+- core_handlers: ping_api, create_api_token
 - instance_handlers: Instance management
 - ban_handlers: IP ban management
 - service_handlers: Service management

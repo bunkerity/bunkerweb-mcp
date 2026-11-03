@@ -15,7 +15,7 @@ transient errors with backoff. Three exceptions:
 
 - Reads of services, instances, global config and bans come from an in-memory cache
   (`cache.py`, TTL 30 s to 10 min) while `CACHE_ENABLED` is true, its default.
-- `logs_list` and `logs_read` read local files under `BUNKERWEB_LOGS_PATH`
+- `list_logs` and `read_log` read local files under `BUNKERWEB_LOGS_PATH`
   (`tools/log_handlers.py`) and make no API call.
 - `search_bunkerweb_docs` calls the separate search service (`search_client.py`).
 
@@ -39,9 +39,10 @@ are in `deploy/` and the root Compose files; n8n examples are in `n8n-workflows/
 
 ## What the server exposes
 
-- **Tools** (44 by default, from `TOOL_DESCRIPTIONS`): core (`authenticate`, `ping`, `health`, `diagnose`), instances,
-  bans, services, global config, custom configs, plugins, cache and jobs. `logs_list` and
-  `logs_read` register only when `BUNKERWEB_LOGS_PATH` is set. `search_bunkerweb_docs`
+- **Tools** (36 by default, from `TOOL_DESCRIPTIONS`; 37 with `search_bunkerweb_docs`): core
+  (`create_api_token`, `ping_api`, `diagnose_bunkerweb`), instances, bans, services, global config,
+  custom configs, plugins, cache and jobs. All names follow `verb_noun` (ADR 0007). `list_logs` and
+  `read_log` register only when `BUNKERWEB_LOGS_PATH` is set. `search_bunkerweb_docs`
   registers only when `SEARCH_MODE=remote`.
 - **Resources**: `config://global`, `logs://jobs`, `bans://active`, `instances://status`
   (JSON), and `skill://bunkerweb/<skill>/<path>` for the vendored skills when
@@ -72,9 +73,9 @@ the Compose files set `disabled`.
 Token comparison goes through `_token_matches` (constant time, bytes). `BUNKERWEB_API_TOKEN` or
 Basic credentials authenticate the server to BunkerWeb, not clients to the server; a bearer
 token wins over Basic. The server has no per-client roles. `MCP_READ_ONLY` (default `false`)
-keeps only read tools on every transport; it also removes `authenticate`, which returns a
+keeps only read tools on every transport; it also removes `create_api_token`, which returns a
 credential. With writes enabled, several tools change or delete BunkerWeb state
-(`delete_service`, `instance_stop`, `plugins_upload`, `unban_ip`, ...). Keep that in mind when
+(`delete_service`, `stop_instances`, `install_plugins`, `unban_ips`, ...). Keep that in mind when
 adding tools or changing authentication.
 
 `BUNKERWEB_REDACT_SECRETS` masks by setting name in registry tool results and withholds upstream error details; logs, custom config text and docs search are outside it (`docs/security.md`, "Secret Redaction"). Build any API path from `client._segment`, never a raw f-string.

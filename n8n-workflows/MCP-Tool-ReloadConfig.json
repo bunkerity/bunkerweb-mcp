@@ -18,7 +18,7 @@
         "url": "http://bw-mcp:8080/rpc",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\"tool\": \"reload_instances\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {\n    \"test\": {{ $json.query?.test !== undefined ? $json.query.test : ($json.test !== false) }}\n  }\n}",
+        "jsonBody": "={\"tool\": \"reload_instances\", \"id\": \"req-{{ $now.toFormat('X') }}\", \n  \"params\": {\n    \"all\": true,\n    \"test\": {{ $json.query?.test !== undefined ? $json.query.test : ($json.test !== false) }}\n  }\n}",
         "options": {
           "timeout": 30000
         }

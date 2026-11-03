@@ -21,7 +21,7 @@ from bunkerweb_mcp.schemas.configs import (
     ConfigsResponse,
     ConfigUpdateRequest,
 )
-from bunkerweb_mcp.schemas.core import AuthResponse, HealthResponse, PingResponse
+from bunkerweb_mcp.schemas.core import AuthResponse, PingResponse
 from bunkerweb_mcp.schemas.global_config import GlobalConfigResponse
 from bunkerweb_mcp.schemas.instances import (
     InstanceCreateRequest,
@@ -367,14 +367,6 @@ REQUEST_JSON_CASES = [
         InstancesResponse(status="success"),
     ),
     _json_case(
-        "delete_instance",
-        ("edge-1",),
-        {},
-        ("DELETE", "/instances/edge-1"),
-        {"response_model": ApiResponse},
-        ApiResponse(status="success"),
-    ),
-    _json_case(
         "reload_instances",
         (),
         {"test": False},
@@ -477,17 +469,6 @@ REQUEST_JSON_CASES = [
         ApiResponse(status="success"),
     ),
     _json_case(
-        "convert_service",
-        ("svc",),
-        {"convert_to": "draft"},
-        ("POST", "/services/svc/convert"),
-        {
-            "params": {"convert_to": "draft"},
-            "response_model": ApiResponse,
-        },
-        ApiResponse(status="success"),
-    ),
-    _json_case(
         "read_global_config",
         (),
         {"full": True, "methods": True},
@@ -574,14 +555,6 @@ REQUEST_JSON_CASES = [
         ConfigResponse(status="success"),
     ),
     _json_case(
-        "delete_config",
-        (CONFIG_KEY_SERVICE,),
-        {},
-        ("DELETE", "/configs/svc/http/snippet"),
-        {"response_model": ApiResponse},
-        ApiResponse(status="success"),
-    ),
-    _json_case(
         "list_plugins",
         (),
         {"plugin_type": "external", "with_data": True},
@@ -625,14 +598,6 @@ REQUEST_JSON_CASES = [
             "json": CACHE_DELETE_PAYLOAD.model_dump(exclude_none=True, by_alias=True),
             "response_model": ApiResponse,
         },
-        ApiResponse(status="success"),
-    ),
-    _json_case(
-        "delete_cache_file",
-        (),
-        {"service": "svc", "plugin_id": "plug", "job_name": "job", "file_name": "file"},
-        ("DELETE", "/cache/svc/plug/job/file"),
-        {"response_model": ApiResponse},
         ApiResponse(status="success"),
     ),
     _json_case(
@@ -799,19 +764,6 @@ async def test_authenticate_builds_basic_headers(monkeypatch: pytest.MonkeyPatch
     assert await_call.kwargs["json"] == {"username": "alice", "password": "secret"}
     headers = await_call.kwargs["headers"]
     assert "Authorization" in headers and headers["Authorization"].startswith("Basic ")
-    await client.close()
-
-
-@pytest.mark.asyncio
-async def test_health_uses_request(monkeypatch: pytest.MonkeyPatch) -> None:
-    client = BunkerWebClient(_make_settings())
-    mock = AsyncMock(return_value=DummyResponse({"status": "success", "details": {"db": "ok"}}))
-    monkeypatch.setattr(client, "_request", mock)
-
-    result = await client.health()
-
-    assert isinstance(result, HealthResponse)
-    mock.assert_awaited_once_with("GET", "/health")
     await client.close()
 
 
@@ -1083,7 +1035,7 @@ async def test_path_segment_encodes_once() -> None:
     client, async_client = _recording_client(requests)
     async with async_client:
         await client.get_instance("bw-1:5000")
-        await client.delete_cache_file(
+        await client.fetch_cache_file(
             service="global", plugin_id="misc", job_name="job", file_name="ip list.txt"
         )
         await client.get_service("exämple.com")
@@ -1103,7 +1055,7 @@ async def test_path_segment_encodes_once() -> None:
         ("delete_plugin", {"plugin_id": ".."}),
         ("stop_instance", {"hostname": "."}),
         (
-            "delete_cache_file",
+            "fetch_cache_file",
             {"service": "global", "plugin_id": "misc", "job_name": "job", "file_name": ".."},
         ),
     ],

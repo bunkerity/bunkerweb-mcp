@@ -18,11 +18,12 @@ if TYPE_CHECKING:
     from .params import (
         BunkerWebClientProtocol,
         EmptyParams,
-        HostnameParams,
         InstanceCreateParams,
         InstancesDeleteParams,
+        InstanceTargetParams,
         InstanceUpdateParams,
-        ReloadParams,
+        OptionalHostnameParams,
+        ReloadInstancesParams,
         SimpleHostnameParams,
     )
 
@@ -71,59 +72,58 @@ async def handle_list_instances(
 
 
 async def handle_ping_instances(
-    client: BunkerWebClientProtocol, params: EmptyParams
+    client: BunkerWebClientProtocol, params: OptionalHostnameParams
 ) -> dict[str, Any]:
-    """Ping all registered instances.
-
-    This tool sends ping requests to all registered BunkerWeb instances
-    to verify their availability and network connectivity.
+    """Ping one instance, or every registered instance when no hostname is given.
 
     Args:
         client: BunkerWeb API client instance
-        params: Empty parameters (no input required)
+        params: Parameters containing:
+            - hostname: Optional instance hostname; omit to ping all instances
 
     Returns:
-        API response dict with:
-            - results: Per-instance ping results with latency
-            - summary: Aggregate statistics (reachable, unreachable counts)
+        API response dict with the live ping result of the targeted instances.
 
     Raises:
-        ToolExecutionError: If API request fails
+        ToolExecutionError: If the instance is not found or the API request fails
 
     Examples:
-        >>> await handle_ping_instances(client, EmptyParams())
-        {"results": [...], "summary": {"reachable": 3, "unreachable": 0}}
+        >>> await handle_ping_instances(client, OptionalHostnameParams(hostname="bw-1"))
+        {"status": "success", ...}
     """
-    response = await client.ping_instances()
+    if params.hostname is not None:
+        response = await client.ping_instance(params.hostname)
+    else:
+        response = await client.ping_instances()
     return _serialize_response(response)
 
 
 async def handle_stop_instances(
-    client: BunkerWebClientProtocol, params: EmptyParams
+    client: BunkerWebClientProtocol, params: InstanceTargetParams
 ) -> dict[str, Any]:
-    """Stop all registered instances.
-
-    This tool sends stop commands to all registered BunkerWeb instances,
-    gracefully shutting down nginx processes. Use with caution in production.
+    """Stop one instance, or every registered instance with all=true.
 
     Args:
         client: BunkerWeb API client instance
-        params: Empty parameters (no input required)
+        params: Parameters containing exactly one of:
+            - hostname: Target instance hostname
+            - all: True to stop every registered instance
 
     Returns:
-        API response dict with:
-            - stopped: List of successfully stopped instance hostnames
-            - failed: List of instances that failed to stop
-            - errors: Detailed error messages
+        API response dict with the stop result of the targeted instances.
 
     Raises:
-        ToolExecutionError: If API request fails
+        ToolExecutionError: If the instance is not found or the stop fails
+        ToolValidationError: If neither or both of hostname and all are given
 
     Examples:
-        >>> await handle_stop_instances(client, EmptyParams())
-        {"stopped": ["bw-1", "bw-2"], "failed": [], "errors": {}}
+        >>> await handle_stop_instances(client, InstanceTargetParams(hostname="bw-1"))
+        {"status": "success", ...}
     """
-    response = await client.stop_instances()
+    if params.hostname is not None:
+        response = await client.stop_instance(params.hostname)
+    else:
+        response = await client.stop_instances()
     return _serialize_response(response)
 
 
@@ -164,71 +164,9 @@ async def handle_get_instance(
             return _serialize_response(response)
 
         return await get_cached(  # type: ignore[no-any-return]
-            cache_key, CACHE_TTL["instance_get"], fetch_and_serialize
+            cache_key, CACHE_TTL["get_instance"], fetch_and_serialize
         )
     response = await client.get_instance(params.hostname)
-    return _serialize_response(response)
-
-
-async def handle_ping_instance(
-    client: BunkerWebClientProtocol, params: SimpleHostnameParams
-) -> dict[str, Any]:
-    """Ping a specific instance.
-
-    This tool sends a ping request to a single BunkerWeb instance
-    to verify availability and measure network latency.
-
-    Args:
-        client: BunkerWeb API client instance
-        params: Parameters containing:
-            - hostname: Target instance hostname
-
-    Returns:
-        API response dict with:
-            - status: Ping status ("success", "timeout", "unreachable")
-            - latency_ms: Response latency in milliseconds
-            - timestamp: Ping timestamp
-
-    Raises:
-        ToolExecutionError: If instance not found or network error
-        ToolValidationError: If hostname is invalid
-
-    Examples:
-        >>> await handle_ping_instance(client, SimpleHostnameParams(hostname="bw-1"))
-        {"status": "success", "latency_ms": 5, "timestamp": "..."}
-    """
-    response = await client.ping_instance(params.hostname)
-    return _serialize_response(response)
-
-
-async def handle_stop_instance(
-    client: BunkerWebClientProtocol, params: SimpleHostnameParams
-) -> dict[str, Any]:
-    """Stop a specific instance.
-
-    This tool sends a stop command to a single BunkerWeb instance,
-    gracefully shutting down the nginx process.
-
-    Args:
-        client: BunkerWeb API client instance
-        params: Parameters containing:
-            - hostname: Target instance hostname to stop
-
-    Returns:
-        API response dict with:
-            - status: Stop operation status
-            - hostname: Stopped instance hostname
-            - message: Confirmation or error message
-
-    Raises:
-        ToolExecutionError: If instance not found or stop fails
-        ToolValidationError: If hostname is invalid
-
-    Examples:
-        >>> await handle_stop_instance(client, SimpleHostnameParams(hostname="bw-1"))
-        {"status": "success", "hostname": "bw-1", "message": "Instance stopped"}
-    """
-    response = await client.stop_instance(params.hostname)
     return _serialize_response(response)
 
 
@@ -351,99 +289,32 @@ async def handle_delete_instances(
     return _serialize_response(response)
 
 
-async def handle_delete_instance(
-    client: BunkerWebClientProtocol, params: SimpleHostnameParams
-) -> dict[str, Any]:
-    """Delete a single instance.
-
-    This tool unregisters a specific BunkerWeb instance by hostname.
-    Instance should be stopped before deletion.
-
-    Args:
-        client: BunkerWeb API client instance
-        params: Parameters containing:
-            - hostname: Instance hostname to delete
-
-    Returns:
-        API response dict with:
-            - status: Deletion status
-            - hostname: Deleted instance hostname
-            - message: Confirmation message
-
-    Raises:
-        ToolExecutionError: If instance not found or deletion fails
-        ToolValidationError: If hostname is invalid
-
-    Examples:
-        >>> await handle_delete_instance(client, SimpleHostnameParams(hostname="bw-1"))
-        {"status": "deleted", "hostname": "bw-1", "message": "Instance removed"}
-    """
-    response = await client.delete_instance(params.hostname)
-    return _serialize_response(response)
-
-
 async def handle_reload_instances(
-    client: BunkerWebClientProtocol, params: ReloadParams
+    client: BunkerWebClientProtocol, params: ReloadInstancesParams
 ) -> dict[str, Any]:
-    """Trigger configuration reload across all instances.
-
-    This tool reloads BunkerWeb configuration on all registered instances.
-    Use test=True to validate configuration syntax before applying changes.
+    """Reload configuration on one instance, or on every instance with all=true.
 
     Args:
         client: BunkerWeb API client instance
-        params: Reload parameters containing:
-            - test: Run in validation-only mode (default: True)
-
-    Returns:
-        API response dict with:
-            - status: Reload status ("success", "failed", "validation_error")
-            - results: Per-instance reload results
-            - errors: Configuration or reload errors
-
-    Raises:
-        ToolExecutionError: If reload fails or syntax errors detected
-        ToolValidationError: If parameters are invalid
-
-    Examples:
-        >>> await handle_reload_instances(client, ReloadParams(test=True))
-        {"status": "success", "results": [...], "errors": {}}
-    """
-    response = await client.reload_instances(test=params.test)
-    return _serialize_response(response)
-
-
-async def handle_reload_instance(
-    client: BunkerWebClientProtocol, params: HostnameParams
-) -> dict[str, Any]:
-    """Trigger configuration reload on a single instance.
-
-    This tool reloads BunkerWeb configuration on a specific instance.
-    Use test=True to validate syntax before applying changes.
-
-    Args:
-        client: BunkerWeb API client instance
-        params: Reload parameters containing:
+        params: Parameters containing exactly one of:
             - hostname: Target instance hostname
-            - test: Run in validation-only mode (default: True)
+            - all: True to reload every registered instance
+          and:
+            - test: Test the configuration first (default: True); the reload still happens
 
     Returns:
-        API response dict with:
-            - status: Reload status
-            - hostname: Target instance
-            - output: nginx reload output
-            - errors: Syntax or reload errors
+        API response dict with the reload result of the targeted instances.
 
     Raises:
-        ToolExecutionError: If instance not found or reload fails
-        ToolValidationError: If parameters are invalid
+        ToolExecutionError: If the instance is not found or the reload fails
+        ToolValidationError: If neither or both of hostname and all are given
 
     Examples:
-        >>> await handle_reload_instance(client, HostnameParams(
-        ...     hostname="bw-1",
-        ...     test=False
-        ... ))
-        {"status": "success", "hostname": "bw-1", "output": "..."}
+        >>> await handle_reload_instances(client, ReloadInstancesParams(hostname="bw-1"))
+        {"status": "success", ...}
     """
-    response = await client.reload_instance(hostname=params.hostname, test=params.test)
+    if params.hostname is not None:
+        response = await client.reload_instance(params.hostname, test=params.test)
+    else:
+        response = await client.reload_instances(test=params.test)
     return _serialize_response(response)

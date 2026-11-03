@@ -25,7 +25,7 @@ from .schemas.configs import (
     ConfigsResponse,
     ConfigUpdateRequest,
 )
-from .schemas.core import AuthResponse, HealthResponse, PingResponse
+from .schemas.core import AuthResponse, PingResponse
 from .schemas.global_config import GlobalConfigResponse, GlobalConfigUpdate
 from .schemas.instances import (
     InstanceCreateRequest,
@@ -221,10 +221,6 @@ class BunkerWebClient:
     async def ping(self) -> PingResponse:
         return await self._request_json("GET", "/ping", response_model=PingResponse)
 
-    async def health(self) -> HealthResponse:
-        response = await self._request("GET", "/health")
-        return HealthResponse.model_validate(response.json())
-
     async def list_instances(self) -> InstancesResponse:
         return await self._request_json("GET", "/instances", response_model=InstancesResponse)
 
@@ -273,13 +269,6 @@ class BunkerWebClient:
             "/instances",
             json=payload.model_dump(exclude_none=True),
             response_model=InstancesResponse,
-        )
-
-    async def delete_instance(self, hostname: str) -> ApiResponse:
-        return await self._request_json(
-            "DELETE",
-            f"/instances/{_segment(hostname, 'hostname')}",
-            response_model=ApiResponse,
         )
 
     async def reload_instances(self, *, test: bool = True) -> ApiResponse:
@@ -407,14 +396,6 @@ class BunkerWebClient:
             response_model=ApiResponse,
         )
 
-    async def convert_service(self, service: str, *, convert_to: str) -> ApiResponse:
-        return await self._request_json(
-            "POST",
-            f"/services/{_segment(service, 'service')}/convert",
-            params={"convert_to": convert_to},
-            response_model=ApiResponse,
-        )
-
     async def read_global_config(
         self, *, full: bool = False, methods: bool = False
     ) -> GlobalConfigResponse:
@@ -507,13 +488,6 @@ class BunkerWebClient:
             _config_path(key),
             json=payload.model_dump(exclude_none=True),
             response_model=ConfigResponse,
-        )
-
-    async def delete_config(self, key: ConfigKey) -> ApiResponse:
-        return await self._request_json(
-            "DELETE",
-            _config_path(key),
-            response_model=ApiResponse,
         )
 
     async def upload_configs(
@@ -651,20 +625,6 @@ class BunkerWebClient:
             "content_type": content_type,
             "data_base64": base64.b64encode(response.content).decode("ascii"),
         }
-
-    async def delete_cache_file(
-        self,
-        *,
-        service: str,
-        plugin_id: str,
-        job_name: str,
-        file_name: str,
-    ) -> ApiResponse:
-        return await self._request_json(
-            "DELETE",
-            _cache_path(service, plugin_id, job_name, file_name),
-            response_model=ApiResponse,
-        )
 
     async def list_jobs(self) -> JobsResponse:
         return await self._request_json("GET", "/jobs", response_model=JobsResponse)

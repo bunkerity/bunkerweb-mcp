@@ -46,8 +46,8 @@ Use the shared registry and database read-back.
 
 `TOOL_EFFECTS` in `tools/registry.py` classifies tools as reads or writes and marks
 destructive writes. Deletion, stopping, overwriting, weakening protection, and
-reloads count as destructive. `authenticate` counts as a write because it returns
-a credential. `diagnose` and `search_bunkerweb_docs` count as reads.
+reloads count as destructive. `create_api_token` counts as a write because it returns
+a credential. `diagnose_bunkerweb` and `search_bunkerweb_docs` count as reads.
 
 The table drives MCP `readOnlyHint` and write `destructiveHint` annotations, and
 the `read_only` and `destructive` fields in tool descriptors. We do not advertise
@@ -89,7 +89,7 @@ failed read-back returns the unverified receipt without the draft marker and doe
 not trigger another PATCH.
 The summary always ends `LIVE UNVERIFIED.`
 
-`diagnose` reports the API host and port without credentials, reachability,
+`diagnose_bunkerweb` reports the API host and port without credentials, reachability,
 authentication, version, `MULTISITE`, and instance counts. With `service`, it adds
 existence, draft state, and explicit setting-owner counts. Unknown versions appear
 as `unknown (strictest rules applied)`. It cannot check live configuration.

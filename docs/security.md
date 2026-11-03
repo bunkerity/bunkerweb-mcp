@@ -260,7 +260,7 @@ With `methods=true`, only `value` and `default` are masked and the metadata stay
 
 Keys suffixed for multiple settings (`AUTH_BASIC_PASSWORD_1`) and prefixed by a server name
 in the multisite global view (`www.example.com_REDIS_PASSWORD`) are matched too. The Biscuit
-token returned by the `authenticate` tool is masked as well.
+token returned by the `create_api_token` tool is masked as well.
 
 ### Upstream errors
 
@@ -292,25 +292,25 @@ the redaction policy refuses to return.
 
 For the cache, the policy checks the file name BunkerWeb will actually look up. BunkerWeb
 turns a `folder:` token into a path by dropping the prefix and replacing every `_` with `/`,
-so `folder:a_b.key` is checked as `a/b.key`. Local log sources read by `logs_list` and
-`logs_read` are not API paths and are not affected.
+so `folder:a_b.key` is checked as `a/b.key`. Local log sources read by `list_logs` and
+`read_log` are not API paths and are not affected.
 
 ### Refused writes
 
 The following calls fail with a validation error before anything is sent to the API:
 
-- `create_service`, `update_service` or `global_config_update` setting a sensitive key;
+- `create_service`, `update_service` or `update_global_config` setting a sensitive key;
 - any tool call whose parameters contain `***REDACTED***`, including decoded
   `content_base64` uploads. The API would otherwise store the placeholder literally,
   overwriting the real secret.
 
 Manage secrets through the BunkerWeb UI or API directly. Updates are merged by the API, so
-leaving a sensitive key out of an `update_service` or `global_config_update` call keeps its
+leaving a sensitive key out of an `update_service` or `update_global_config` call keeps its
 stored value.
 
 ### Job cache
 
-`cache_fetch_file` is refused, and `cache_list` masks the `data` of matching entries, for:
+`get_cache_file` is refused, and `list_cache_files` masks the `data` of matching entries, for:
 
 - the `letsencrypt` (certbot keys, ACME accounts, DNS credentials), `customcert`,
   `selfsigned` and `crowdsec` (bouncer API key) plugins;
@@ -337,9 +337,9 @@ the server fail at startup.
 
 ### Known limitations
 
-- Custom configuration snippets (`config_get`, and `configs_list` with `with_data=true`) are
+- Custom configuration snippets (`get_config`, and `list_configs` with `with_data=true`) are
   free-form nginx or ModSecurity text and are **not** redacted. Do not store secrets in them.
-- Log lines returned by `logs_read` are free text and are **not** redacted. A line can contain
+- Log lines returned by `read_log` are free text and are **not** redacted. A line can contain
   a token, a password in a query string or any value a request carried. Leave `BUNKERWEB_LOGS_PATH`
   unset when clients must not see such content.
 - Documentation search (`search_bunkerweb_docs`) is registered outside the tool registry and

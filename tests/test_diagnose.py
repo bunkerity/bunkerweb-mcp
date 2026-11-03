@@ -198,14 +198,18 @@ async def test_diagnose_unknown_multisite(data: dict[str, str] | None) -> None:
 
 async def test_diagnose_registered_in_read_only_mode() -> None:
     tools = Tools(_client(), read_only=True)
-    descriptor = next(item for item in tools.list_descriptors() if item["name"] == "diagnose")
+    descriptor = next(
+        item for item in tools.list_descriptors() if item["name"] == "diagnose_bunkerweb"
+    )
     assert descriptor["read_only"] is True
     assert descriptor["destructive"] is False
     assert descriptor["description"] == (
-        "Read-only check of the connected BunkerWeb: reachability, authentication, version, "
-        "MULTISITE, instances, and optionally who owns a service's settings."
+        "Read-only report on the connected BunkerWeb: API reachability, authentication, version, "
+        "MULTISITE and instance counts; service (a service ID) adds its existence, draft state "
+        "and setting owners. A failed check shows as FAIL or null, not an error. Use ping_api for "
+        "a bare probe."
     )
-    handler = tools.get_tool("diagnose")
+    handler = tools.get_tool("diagnose_bunkerweb")
     assert handler is not None
     result = await handler(DiagnoseParams())
     assert result["auth"] is True

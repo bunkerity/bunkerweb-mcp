@@ -13,7 +13,7 @@ from bunkerweb_mcp.prompt_catalog import DEFAULT_PROMPT_FILE
 from bunkerweb_mcp.schemas.bans import BansResponse
 from bunkerweb_mcp.schemas.common import ApiResponse
 from bunkerweb_mcp.schemas.configs import ConfigResponse, ConfigsResponse
-from bunkerweb_mcp.schemas.core import HealthResponse, PingResponse
+from bunkerweb_mcp.schemas.core import PingResponse
 from bunkerweb_mcp.schemas.global_config import GlobalConfigResponse
 from bunkerweb_mcp.schemas.instances import InstancesResponse
 from bunkerweb_mcp.schemas.jobs import JobsResponse
@@ -209,9 +209,6 @@ class DummyClient:
     async def ping(self) -> PingResponse:
         return PingResponse(status="ok", message="pong")
 
-    async def health(self) -> HealthResponse:
-        return HealthResponse(status="ok", details={})
-
     async def list_instances(self) -> InstancesResponse:
         return InstancesResponse(status="success", data=[])
 
@@ -249,9 +246,6 @@ class DummyClient:
     async def delete_service(self, service: str) -> ApiResponse:
         return ApiResponse(status="success", message=f"deleted:{service}")
 
-    async def convert_service(self, service: str, *, convert_to: str) -> ApiResponse:
-        return ApiResponse(status="success", message=f"convert:{service}:{convert_to}")
-
     async def read_global_config(self, *, full: bool, methods: bool) -> GlobalConfigResponse:
         return GlobalConfigResponse(status="success", data=GLOBAL_CONFIG_PAYLOAD)
 
@@ -269,9 +263,6 @@ class DummyClient:
 
     async def update_config(self, key, payload):  # type: ignore[no-untyped-def]
         return ConfigResponse(status="success")
-
-    async def delete_config(self, key) -> ApiResponse:  # type: ignore[no-untyped-def]
-        return ApiResponse(status="success")
 
     async def delete_configs(self, payload):  # type: ignore[no-untyped-def]
         return ApiResponse(status="success")
@@ -329,7 +320,7 @@ async def test_read_only_rpc_and_ws_refuse_writes(
             response = await client.post(
                 "/rpc",
                 headers={"X-MCP-Token": "secret"},
-                json={"tool": "ping", "params": {}},
+                json={"tool": "ping_api", "params": {}},
             )
             assert response.status_code == 200
             assert response.json()["result"]["message"] == "pong"
@@ -338,7 +329,7 @@ async def test_read_only_rpc_and_ws_refuse_writes(
             await ws.send_json(payload)
             message = await ws.receive_json()
             assert message["error"]["code"] == "unknown_tool"
-            await ws.send_json({"tool": "ping", "params": {}})
+            await ws.send_json({"tool": "ping_api", "params": {}})
             message = await ws.receive_json()
             assert message["result"]["message"] == "pong"
         update_service.assert_not_called()
@@ -355,14 +346,12 @@ async def test_tools_endpoint_returns_descriptors(app) -> None:
     assert isinstance(payload, list)
     names = {item["name"] for item in payload}
     expected_names = {
-        "ping",
-        "health",
+        "ping_api",
         "list_instances",
         "reload_instances",
-        "reload_instance",
         "list_bans",
-        "ban_ip",
-        "unban_ip",
+        "ban_ips",
+        "unban_ips",
         "list_services",
         "get_service",
         "delete_service",
@@ -447,7 +436,7 @@ async def test_rpc_requires_token(app) -> None:
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
-        response = await client.post("/rpc", json={"id": "1", "tool": "ping", "params": {}})
+        response = await client.post("/rpc", json={"id": "1", "tool": "ping_api", "params": {}})
     assert response.status_code == 401
     assert response.json()["detail"] == "Invalid MCP token"
 
@@ -461,14 +450,14 @@ async def test_rpc_logs_metrics(app) -> None:
             response = await client.post(
                 "/rpc",
                 headers={"X-MCP-Token": "secret"},
-                json={"id": "1", "tool": "ping", "params": {}},
+                json={"id": "1", "tool": "ping_api", "params": {}},
             )
     assert response.status_code == 200
     info_mock.assert_called()
     args, kwargs = info_mock.call_args
     assert args[0] == "tool_call"
     metrics = kwargs.get("extra", {}).get("metrics", {})
-    assert metrics.get("tool") == "ping"
+    assert metrics.get("tool") == "ping_api"
     assert "duration_seconds" in metrics
 
 
@@ -480,31 +469,14 @@ async def test_rpc_ping_returns_payload(app) -> None:
         response = await client.post(
             "/rpc",
             headers={"X-MCP-Token": "secret"},
-            json={"id": "ping", "tool": "ping", "params": {}},
+            json={"id": "ping", "tool": "ping_api", "params": {}},
         )
 
     assert response.status_code == 200
     payload = response.json()
     assert payload["id"] == "ping"
     assert payload["result"] == {"status": "ok", "message": "pong"}
-    assert payload["prompt"] == TOOL_PROMPTS["ping"]
-
-
-@pytest.mark.asyncio
-async def test_rpc_health_returns_payload(app) -> None:
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        response = await client.post(
-            "/rpc",
-            headers={"X-MCP-Token": "secret"},
-            json={"id": "health", "tool": "health", "params": {}},
-        )
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["id"] == "health"
-    assert payload["result"] == {"status": "ok", "details": {}}
+    assert payload["prompt"] == TOOL_PROMPTS["ping_api"]
 
 
 @pytest.mark.asyncio
@@ -557,7 +529,7 @@ async def test_rpc_ban_ip_returns_payload(app) -> None:
             headers={"X-MCP-Token": "secret"},
             json={
                 "id": "ban-ip",
-                "tool": "ban_ip",
+                "tool": "ban_ips",
                 "params": {"bans": [{"ip": "198.51.100.1", "exp": 60, "reason": "tests"}]},
             },
         )
@@ -567,7 +539,7 @@ async def test_rpc_ban_ip_returns_payload(app) -> None:
     assert payload["id"] == "ban-ip"
     result = payload["result"]
     assert result == {"status": "success"}
-    assert payload["prompt"] == TOOL_PROMPTS["ban_ip"]
+    assert payload["prompt"] == TOOL_PROMPTS["ban_ips"]
 
 
 @pytest.mark.asyncio
@@ -580,7 +552,7 @@ async def test_rpc_unban_ip_returns_payload(app) -> None:
             headers={"X-MCP-Token": "secret"},
             json={
                 "id": "unban-ip",
-                "tool": "unban_ip",
+                "tool": "unban_ips",
                 "params": {"bans": [{"ip": "198.51.100.1"}]},
             },
         )
@@ -590,7 +562,7 @@ async def test_rpc_unban_ip_returns_payload(app) -> None:
     assert payload["id"] == "unban-ip"
     result = payload["result"]
     assert result == {"status": "success"}
-    assert payload["prompt"] == TOOL_PROMPTS["unban_ip"]
+    assert payload["prompt"] == TOOL_PROMPTS["unban_ips"]
 
 
 @pytest.mark.asyncio
@@ -618,7 +590,11 @@ async def test_rpc_reload_instances_returns_payload(app) -> None:
         response = await client.post(
             "/rpc",
             headers={"X-MCP-Token": "secret"},
-            json={"id": "reload-all", "tool": "reload_instances", "params": {"test": True}},
+            json={
+                "id": "reload-all",
+                "tool": "reload_instances",
+                "params": {"all": True, "test": True},
+            },
         )
 
     assert response.status_code == 200
@@ -638,7 +614,7 @@ async def test_rpc_reload_instance_returns_payload(app) -> None:
             headers={"X-MCP-Token": "secret"},
             json={
                 "id": "reload-one",
-                "tool": "reload_instance",
+                "tool": "reload_instances",
                 "params": {"hostname": "edge-1", "test": False},
             },
         )
@@ -759,32 +735,6 @@ async def test_rpc_delete_service_returns_payload(app) -> None:
 
 
 @pytest.mark.asyncio
-async def test_rpc_convert_service_returns_payload(app) -> None:
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        response = await client.post(
-            "/rpc",
-            headers={"X-MCP-Token": "secret"},
-            json={
-                "id": "convert",
-                "tool": "convert_service",
-                "params": {
-                    "service": "integration.api.test",
-                    "convert_to": "draft",
-                },
-            },
-        )
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["id"] == "convert"
-    result = payload["result"]
-    assert result["status"] == "success"
-    assert result["message"] == "convert:integration.api.test:draft"
-
-
-@pytest.mark.asyncio
 async def test_rpc_jobs_list_returns_payload(app) -> None:
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -792,7 +742,7 @@ async def test_rpc_jobs_list_returns_payload(app) -> None:
         response = await client.post(
             "/rpc",
             headers={"X-MCP-Token": "secret"},
-            json={"id": "jobs-list", "tool": "jobs_list", "params": {}},
+            json={"id": "jobs-list", "tool": "list_jobs", "params": {}},
         )
 
     assert response.status_code == 200
@@ -813,7 +763,7 @@ async def test_rpc_jobs_run_returns_payload(app) -> None:
             headers={"X-MCP-Token": "secret"},
             json={
                 "id": "jobs-run",
-                "tool": "jobs_run",
+                "tool": "run_jobs",
                 "params": {
                     "jobs": [
                         {"plugin": "misc", "name": "anonymous-report"},
@@ -841,7 +791,7 @@ async def test_rpc_configs_list_returns_payload(app) -> None:
             headers={"X-MCP-Token": "secret"},
             json={
                 "id": "cfg-list",
-                "tool": "configs_list",
+                "tool": "list_configs",
                 "params": {
                     "with_data": True,
                     "with_drafts": True,
@@ -867,7 +817,7 @@ async def test_rpc_config_get_returns_payload(app) -> None:
             headers={"X-MCP-Token": "secret"},
             json={
                 "id": "cfg-get",
-                "tool": "config_get",
+                "tool": "get_config",
                 "params": {
                     "service": None,
                     "type": "http",
@@ -894,7 +844,7 @@ async def test_rpc_config_create_returns_payload(app) -> None:
             headers={"X-MCP-Token": "secret"},
             json={
                 "id": "cfg-create",
-                "tool": "config_create",
+                "tool": "create_config",
                 "params": {
                     "service": None,
                     "type": "http",
@@ -921,7 +871,7 @@ async def test_rpc_config_update_returns_payload(app) -> None:
             headers={"X-MCP-Token": "secret"},
             json={
                 "id": "cfg-update",
-                "tool": "config_update",
+                "tool": "update_config",
                 "params": {
                     "service": None,
                     "type": "http",
@@ -939,32 +889,6 @@ async def test_rpc_config_update_returns_payload(app) -> None:
 
 
 @pytest.mark.asyncio
-async def test_rpc_config_delete_returns_payload(app) -> None:
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://test"
-    ) as client:
-        response = await client.post(
-            "/rpc",
-            headers={"X-MCP-Token": "secret"},
-            json={
-                "id": "cfg-delete",
-                "tool": "config_delete",
-                "params": {
-                    "service": None,
-                    "type": "http",
-                    "name": "integration-snippet",
-                },
-            },
-        )
-
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["id"] == "cfg-delete"
-    result = payload["result"]
-    assert result["status"] == "success"
-
-
-@pytest.mark.asyncio
 async def test_rpc_configs_delete_bulk_returns_payload(app) -> None:
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -974,7 +898,7 @@ async def test_rpc_configs_delete_bulk_returns_payload(app) -> None:
             headers={"X-MCP-Token": "secret"},
             json={
                 "id": "cfg-delete-bulk",
-                "tool": "configs_delete_bulk",
+                "tool": "delete_configs",
                 "params": {
                     "configs": [
                         {
@@ -1004,7 +928,7 @@ async def test_rpc_global_config_read_returns_payload(app) -> None:
             headers={"X-MCP-Token": "secret"},
             json={
                 "id": "gc-read",
-                "tool": "global_config_read",
+                "tool": "get_global_config",
                 "params": {
                     "full": True,
                     "methods": True,
@@ -1030,7 +954,7 @@ async def test_rpc_global_config_update_returns_payload(app) -> None:
             headers={"X-MCP-Token": "secret"},
             json={
                 "id": "gc-update",
-                "tool": "global_config_update",
+                "tool": "update_global_config",
                 "params": {
                     "config": {
                         "KEEP_UPSTREAM_HEADERS": "Content-Security-Policy Permissions-Policy X-Frame-Options",
@@ -1057,7 +981,7 @@ async def test_websocket_requires_token(app) -> None:
 @pytest.mark.asyncio
 async def test_websocket_ping_flow(app) -> None:
     async with WebSocketSession(app, "/ws?token=secret") as ws:
-        await ws.send_json({"id": "1", "tool": "ping", "params": {}})
+        await ws.send_json({"id": "1", "tool": "ping_api", "params": {}})
         message = await ws.receive_json()
     assert isinstance(message, dict)
     assert message["id"] == "1"
@@ -1084,3 +1008,19 @@ async def test_websocket_invalid_json(app) -> None:
         await ws.send_text("not-json")
         message = await ws.receive_json()
     assert message == {"error": {"code": "invalid_json", "message": "Invalid JSON"}}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("tool", ["instance_get", "health", "convert_service", "authenticate"])
+async def test_removed_tool_name_is_unknown(app, tool: str) -> None:
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.post(
+            "/rpc",
+            headers={"X-MCP-Token": "secret"},
+            json={"id": "old", "tool": tool, "params": {"hostname": "edge-1"}},
+        )
+
+    assert response.status_code == 404
+    assert "Unknown tool" in response.text

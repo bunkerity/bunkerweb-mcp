@@ -23,8 +23,8 @@ rewriting a description.
 
 ## Run it
 
-Use the project virtualenv. The script builds the `tools/list` payload Glama sees (the 44
-registry tools plus `search_bunkerweb_docs`, no log tools) whatever `.env` says, then runs
+Use the project virtualenv. The script builds the `tools/list` payload Glama sees (the 36
+registry tools plus `search_bunkerweb_docs`, 37 in all, no log tools) whatever `.env` says, then runs
 the `tdqs` CLI pinned in the script through `uvx`.
 
 ```bash
@@ -93,3 +93,45 @@ flagged. Usage guidelines averaged 4.6 (2.0 before), behavioral transparency 4.5
 parameter semantics 3.4 (2.8). Glama's own grade changes only after it rescans a pushed commit.
 Coherence still loses points on tool count (45 tools) and, on Glama, on naming; both need tool
 renames or merges, which change the public tool API.
+
+## Result of the 2026-11-03 rename
+
+All tools moved to one `verb_noun` scheme, duplicates were merged (45 scored tools became 37),
+and every description was rewritten to put purpose first, name the sibling to use instead,
+explain parameter shape and interaction, and say what comes back (cap 300 characters,
+`SEARCH_TOOL_DESCRIPTION` included). `create_api_token` no longer claims an expiry. Local runs
+with the default model (`gpt-oss:20b-cloud`):
+
+| Run | Tools | Mean tool | Weakest tool | Description quality | Coherence | Overall |
+| --- | --- | --- | --- | --- | --- | --- |
+| Baseline, old names (one run) | 45 | 4.6 | 3.7 | 4.2 | 3.5 | A 4.0 |
+| First rewrite, run 1 | 37 | 4.5 | 3.7 | 4.2 | 3.8 | A 4.1 |
+| First rewrite, run 2 | 37 | 4.5 | 3.7 | 4.2 | 4.3 | A 4.2 |
+| Second rewrite, run 1 | 37 | 4.6 | 4.0 | 4.3 | 4.0 | A 4.2 |
+| Second rewrite, run 2 (same text) | 37 | 4.6 | 4.1 | 4.4 | 4.5 | A 4.4 |
+
+Per-dimension averages over the tools (purpose, usage, behavior, parameters, conciseness,
+completeness):
+
+| Run | Purpose | Usage | Behavior | Parameters | Conciseness | Completeness |
+| --- | --- | --- | --- | --- | --- | --- |
+| Baseline (old names) | 5.00 | 4.44 | 4.44 | 3.40 | 5.00 | 5.00 |
+| First rewrite, run 1 | 4.97 | 4.14 | 4.46 | 3.41 | 4.92 | 4.95 |
+| First rewrite, run 2 | 4.97 | 4.11 | 4.32 | 3.49 | 4.95 | 4.92 |
+| Second rewrite, run 1 | 4.97 | 4.41 | 4.51 | 3.57 | 4.97 | 4.95 |
+| Second rewrite, run 2 | 4.97 | 4.51 | 4.51 | 3.43 | 4.95 | 4.92 |
+
+The old tree already scored 4.6 on the mean and 4.44 on usage guidelines; the gain is in the
+weakest tool (3.7 to 4.0 and 4.1) and in the overall grade, not in the mean.
+
+What moved the weakest tools: the first rewrite left the list deletes (`delete_configs`,
+`delete_cache_files`, `delete_instances`) and `list_bans` at 3.7 to 4.1 because they named no
+sibling to use first (usage guidelines 2). The second rewrite added "Use `list_x` to find
+them" to each, spelled out the list item shape (`{service, type, name}`), and gave
+`list_bans` an explicit use case. After it no tool fell below 4.0 in either run. Parameter
+semantics stays near 3.4 to 3.6: with 100% schema coverage the rubric's baseline is 3, and only
+text that adds meaning beyond the schema scores higher.
+
+Coherence swung between 3.8 and 4.5 on the same tool set; the tool-count term alone read 2, 4,
+3 and 4 across runs. Treat the coherence column as noise of about 0.4 and compare description
+quality instead. Glama's own grade changes only after it rescans a tagged release.
