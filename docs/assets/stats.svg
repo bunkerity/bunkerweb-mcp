@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 120" width="1000" height="120" role="img" aria-label="36 API tools, 13 Agent Skills, streamable HTTP and stdio transports.">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b354a"/>
+      <stop offset="1" stop-color="#0b5577"/>
+    </linearGradient>
+    <clipPath id="clip"><rect width="1000" height="120" rx="14"/></clipPath>
+  </defs>
+  <g clip-path="url(#clip)">
+    <rect width="1000" height="120" fill="url(#bg)"/>
+    <g fill="none" stroke="#6ac1e0" stroke-opacity="0.16" stroke-width="2">
+      <path d="M900 -20 L1020 12 L1020 90 L900 140 L780 90 L780 12 Z"/>
+      <path d="M900 4 L996 30 L996 84 L900 124 L804 84 L804 30 Z"/>
+    </g>
+    <rect x="0" y="108" width="1000" height="12" fill="#2eac68"/>
+  </g>
+  <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif" fill="#ffffff">
+    <text x="60" y="58" font-size="40" font-weight="700">36</text>
+    <text x="108" y="58" font-size="17" fill="#bfe3f2">API tools</text>
+    <text x="330" y="58" font-size="40" font-weight="700">13</text>
+    <text x="378" y="58" font-size="17" fill="#bfe3f2">Agent Skills</text>
+    <text x="600" y="58" font-size="26" font-weight="700">HTTP + stdio</text>
+    <text x="600" y="84" font-size="15" fill="#bfe3f2">streamable HTTP, or a local subprocess</text>
+  </g>
+</svg>

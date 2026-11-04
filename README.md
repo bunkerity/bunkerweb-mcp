@@ -11,6 +11,10 @@
 </p>
 
 <p align="center">
+  <img alt="36 API tools, 13 Agent Skills, streamable HTTP and stdio transports." src="docs/assets/stats.svg" width="100%" />
+</p>
+
+<p align="center">
   <a href="https://github.com/bunkerity/bunkerweb-mcp/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/bunkerity/bunkerweb-mcp/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="https://score.getplumber.io/github.com/bunkerity/bunkerweb-mcp"><img alt="Plumber CI/CD security score" src="https://score.getplumber.io/github.com/bunkerity/bunkerweb-mcp.svg" /></a>
   <a href="https://securityscorecards.dev/viewer/?uri=github.com/bunkerity/bunkerweb-mcp"><img alt="OpenSSF Scorecard" src="https://api.securityscorecards.dev/projects/github.com/bunkerity/bunkerweb-mcp/badge" /></a>
@@ -30,8 +34,34 @@ Manage services, instances, bans, configuration snippets, plugins, and scheduler
 Connect through streamable HTTP or a local stdio subprocess. Legacy JSON-RPC HTTP
 and WebSocket endpoints remain available for existing integrations.
 
-You need a reachable BunkerWeb API and its credentials when authentication is enabled.
-See the [BunkerWeb documentation](https://docs.bunkerweb.io) for API setup.
+> [!NOTE]
+> You need a reachable BunkerWeb API and its credentials when authentication is enabled.
+> See the [BunkerWeb documentation](https://docs.bunkerweb.io) for API setup.
+
+## How it fits together
+
+The server holds no BunkerWeb state. It turns each tool call into a request to the BunkerWeb API.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/architecture-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/assets/architecture-light.svg">
+    <img alt="Architecture: an MCP client talks to the BunkerWeb MCP server over streamable HTTP or stdio. The server calls the BunkerWeb API over REST. It also reads local logs and calls an optional search service." src="docs/assets/architecture-light.svg" width="100%">
+  </picture>
+</p>
+
+<table>
+  <tr>
+    <td width="33%" valign="top"><b><a href="#quick-start">Run it</a></b><br>Docker Compose against your own API, or the bundled demo stack.</td>
+    <td width="33%" valign="top"><b><a href="#connect-an-mcp-client">Connect a client</a></b><br>Streamable HTTP at <code>/mcp/</code>, or stdio for Claude Code and Claude Desktop.</td>
+    <td width="33%" valign="top"><b><a href="#tools-and-resources">36 API tools</a></b><br>Services, instances, bans, configuration snippets, plugins, and scheduler jobs.</td>
+  </tr>
+  <tr>
+    <td valign="top"><b><a href="#agent-skills">13 Agent Skills</a></b><br>Served as <code>skill://bunkerweb/</code> resources.</td>
+    <td valign="top"><b><a href="#security">Security</a></b><br>Shared-secret checks, <code>MCP_READ_ONLY</code>, secret redaction.</td>
+    <td valign="top"><b><a href="#observability">Observability</a></b><br>Prometheus <code>/metrics</code>, <code>/health</code>, <code>/ready</code>, opt-in tracing.</td>
+  </tr>
+</table>
 
 ## Quick start
 
@@ -59,12 +89,14 @@ Run `docker compose up --build -d` from the repository directory. The default
 [docker-compose.yml](docker-compose.yml) starts BunkerWeb 1.6.13, its scheduler and
 API, MariaDB, Redis, and this server. It publishes BunkerWeb on ports 80/443 and
 MCP on 8080. The included [.mcp.json](.mcp.json) points Claude Code at this server.
-The demo publishes `/mcp/` on port 8080 on all interfaces without a client token check.
 
-This file sets the API URL and demo credentials in its service definitions;
-editing `.env` does not replace those values. It also disables search and MCP DNS
-rebinding protection. Use it on a trusted development machine; review credentials,
-port exposure, and host validation before exposing it to a network.
+> [!WARNING]
+> The demo publishes `/mcp/` on port 8080 on all interfaces without a client token check.
+>
+> This file sets the API URL and demo credentials in its service definitions;
+> editing `.env` does not replace those values. It also disables search and MCP DNS
+> rebinding protection. Use it on a trusted development machine; review credentials,
+> port exposure, and host validation before exposing it to a network.
 
 ## Connect an MCP client
 
@@ -85,7 +117,7 @@ Use `/mcp/`, including the trailing slash. The repository's Claude Code config u
 
 For a remote server, change the URL to your HTTPS endpoint. When runtime log
 access is enabled, add `"headers": {"x-mcp-token": "<shared-secret>"}` inside the
-server entry. Read the authentication limits in Security before exposing HTTP.
+server entry. Read the authentication limits in [Security](#security) before exposing HTTP.
 
 ### Stdio: Claude Code or Claude Desktop
 
@@ -122,6 +154,102 @@ For Claude Desktop, put it in `claude_desktop_config.json`:
 
 Replace the executable path and API address with your own. Keep real credentials
 out of version control. Stdio uses your local process permissions and API credentials.
+
+## Tools and resources
+
+Read `GET /tools` for the running server's tool names, descriptions, and input
+schemas. The [registry](src/bunkerweb_mcp/tools/registry.py) defines 36 API tools, all named `verb_noun` ([ADR 0007](docs/adr/0007-verb-noun-tool-names.md)):
+
+| Group | Tools |
+| --- | --- |
+| Authentication and probes | `create_api_token`, `ping_api`, `diagnose_bunkerweb` |
+| Instances | `list_instances`, `get_instance`, `create_instance`, `update_instance`, `delete_instances`, `ping_instances`, `stop_instances`, `reload_instances` |
+| Bans | `list_bans`, `ban_ips`, `unban_ips` |
+| Services | `list_services`, `get_service`, `create_service`, `update_service`, `delete_service` |
+| Global configuration | `get_global_config`, `update_global_config` |
+| Custom configuration | `list_configs`, `get_config`, `create_config`, `create_configs_from_files`, `update_config`, `update_config_from_file`, `delete_configs` |
+| Plugins | `list_plugins`, `install_plugins`, `uninstall_plugin` |
+| Job cache files | `list_cache_files`, `get_cache_file`, `delete_cache_files` |
+| Scheduler jobs | `list_jobs`, `run_jobs` |
+
+Optional tools:
+
+- `list_logs`, `read_log`: register when `BUNKERWEB_LOGS_PATH` points to a runtime
+  log directory. Mount it read-only; HTTP mode also requires the shared secret.
+  Reads scan up to 1 MiB and return at most 500 lines or 64 KiB of content, with
+  cursors for older history. Compressed `.gz` rotations are excluded. Treat log
+  content as untrusted data.
+- `search_bunkerweb_docs`: registers in remote search mode.
+
+### Tool behavior
+
+Use `diagnose_bunkerweb` to check the connected API's host, reachability, authentication, version,
+`MULTISITE`, and instance counts. Pass `service` to inspect its existence, draft state,
+and setting-owner counts. An unknown version appears as
+`unknown (strictest rules applied)`.
+
+`update_service` validates, writes, then reads back:
+
+- It checks setting names and ownership before sending changes. It refuses
+  the request if validation reads fail or `MULTISITE` is not `yes`. It skips invalid or
+  externally owned keys and unsupported renames; if nothing remains, it sends no write.
+- After an accepted write, it reads the service back without the result cache. The result
+  adds `summary` as its first field and a `receipt` with `db` (`verified`, `partial`, or
+  `unverified`), plus `issues` and `hints` when needed. These report names and reasons,
+  without setting values.
+- A complete match reads `DB VERIFIED (2/2 MATCH). LIVE UNVERIFIED.`
+  A failed read-back reads `WRITE ACCEPTED. DB UNVERIFIED. LIVE UNVERIFIED.`
+  Only a read-back that confirms a draft adds `DRAFT: NOT PUBLISHED.`
+  A failed read-back omits the draft marker.
+- The summary always ends `LIVE UNVERIFIED.` BunkerWeb 1.6 offers no live-state signal;
+  the receipt does not prove that instances use the saved configuration.
+
+`stop_instances` and `reload_instances` need exactly one of `hostname` or `all=true`; any other
+combination fails validation and sends nothing to BunkerWeb. `delete_instances`,
+`delete_configs` and `delete_cache_files` take a list and always call the bulk endpoint.
+`update_service` with `is_draft` toggles a service between draft and online.
+
+Tool metadata identifies reads and destructive writes. `MCP_READ_ONLY=true` removes
+write tools and their prompts on every transport, including `create_api_token`, which
+returns a credential. See [ADR 0006](docs/adr/0006-tool-effects-and-read-only-mode.md)
+for the version rules and enforcement boundary.
+
+### Resources
+
+The [MCP adapter](src/bunkerweb_mcp/mcp_adapter.py) also exposes read-only resources:
+
+| URI | Contents |
+| --- | --- |
+| `config://global` | Global configuration; an empty upstream result includes guidance to use `get_service` with `full=true`. |
+| `logs://jobs` | Scheduler jobs and execution history, separate from runtime log files. |
+| `bans://active` | Active IP bans. |
+| `instances://status` | Registered instances and their status. |
+| `skill://bunkerweb/<skill>/<path>` | Bundled Agent Skills and reference files as text; see [Agent Skills](#agent-skills). |
+
+The first four resources return JSON. Skill resources register when `MCP_ENABLE_SKILLS=true`.
+
+### Prompts
+
+Tool guidance comes from the bundled [prompt catalog](src/bunkerweb_mcp/data/tool_prompts.json).
+The server exposes matching MCP prompts when catalog text exists. Override the
+catalog with `BUNKERWEB_PROMPT_CATALOG`.
+
+Examples and legacy workflow integrations live in [n8n-workflows](n8n-workflows/).
+
+## Agent Skills
+
+The server bundles 13 BunkerWeb Agent Skills (59 files), available through MCP
+`resources/list` and `resources/read`. Start with `skill://bunkerweb/bunkerweb/SKILL.md`;
+the server's initialization instructions point there too. This entrypoint links
+to the other 12 skills on GitHub and to its bundled `references/` files.
+
+Read bundled files at `skill://bunkerweb/<skill>/<path>`, for example
+`skill://bunkerweb/bunkerweb/references/docker.md`. Files are served verbatim,
+with `text/markdown` for `.md` files. Set `MCP_ENABLE_SKILLS=false` to omit skill
+resources and the skills sentence from the server instructions.
+
+Skills come from [bunkerity/bunkerweb-skills](https://github.com/bunkerity/bunkerweb-skills), pinned by [SKILLS_REF](SKILLS_REF).
+Refresh with [scripts/sync_skills.py](scripts/sync_skills.py) `--ref <sha>`; CI runs the script with `--check` to detect drift.
 
 ## Configuration
 
@@ -162,103 +290,19 @@ environment variables can override them. `unset` denotes an absent value or an e
 `WORKERS` is a Docker entrypoint setting, default `1`, rather than a Pydantic
 setting. Caches and rate-limit state live in each worker process.
 
+### Documentation search
+
 Search needs a separate service: set `SEARCH_MODE=remote` and `SEARCH_API_URL`
 to its URL. This repository does not bundle that service. Without it, disable search;
 otherwise the server registers `search_bunkerweb_docs` and readiness checks the service.
 
-## Tools and resources
-
-Read `GET /tools` for the running server's tool names, descriptions, and input
-schemas. The [registry](src/bunkerweb_mcp/tools/registry.py) defines 36 API tools, all named `verb_noun` ([ADR 0007](docs/adr/0007-verb-noun-tool-names.md)):
-
-| Group | Tools |
-| --- | --- |
-| Authentication and probes | `create_api_token`, `ping_api`, `diagnose_bunkerweb` |
-| Instances | `list_instances`, `get_instance`, `create_instance`, `update_instance`, `delete_instances`, `ping_instances`, `stop_instances`, `reload_instances` |
-| Bans | `list_bans`, `ban_ips`, `unban_ips` |
-| Services | `list_services`, `get_service`, `create_service`, `update_service`, `delete_service` |
-| Global configuration | `get_global_config`, `update_global_config` |
-| Custom configuration | `list_configs`, `get_config`, `create_config`, `create_configs_from_files`, `update_config`, `update_config_from_file`, `delete_configs` |
-| Plugins | `list_plugins`, `install_plugins`, `uninstall_plugin` |
-| Job cache files | `list_cache_files`, `get_cache_file`, `delete_cache_files` |
-| Scheduler jobs | `list_jobs`, `run_jobs` |
-
-Optional tools:
-
-- `list_logs`, `read_log`: register when `BUNKERWEB_LOGS_PATH` points to a runtime
-  log directory. Mount it read-only; HTTP mode also requires the shared secret.
-  Reads scan up to 1 MiB and return at most 500 lines or 64 KiB of content, with
-  cursors for older history. Compressed `.gz` rotations are excluded. Treat log
-  content as untrusted data.
-- `search_bunkerweb_docs`: registers in remote search mode.
-
-Use `diagnose_bunkerweb` to check the connected API's host, reachability, authentication, version,
-`MULTISITE`, and instance counts. Pass `service` to inspect its existence, draft state,
-and setting-owner counts. An unknown version appears as
-`unknown (strictest rules applied)`.
-
-`update_service` checks setting names and ownership before sending changes. It refuses
-the request if validation reads fail or `MULTISITE` is not `yes`. It skips invalid or
-externally owned keys and unsupported renames; if nothing remains, it sends no write.
-After an accepted write, it reads the service back without the result cache. The result
-adds `summary` as its first field and a `receipt` with `db` (`verified`, `partial`, or
-`unverified`), plus `issues` and `hints` when needed. These report names and reasons,
-without setting values. For example, a complete match reads
-`DB VERIFIED (2/2 MATCH). LIVE UNVERIFIED.` A failed read-back reads
-`WRITE ACCEPTED. DB UNVERIFIED. LIVE UNVERIFIED.` Only a read-back that confirms a
-draft adds `DRAFT: NOT PUBLISHED.` A failed read-back omits the draft marker.
-The summary always ends `LIVE UNVERIFIED.` BunkerWeb 1.6 offers no live-state signal;
-the receipt does not prove that instances use the saved configuration.
-
-`stop_instances` and `reload_instances` need exactly one of `hostname` or `all=true`; any other
-combination fails validation and sends nothing to BunkerWeb. `delete_instances`,
-`delete_configs` and `delete_cache_files` take a list and always call the bulk endpoint.
-`update_service` with `is_draft` toggles a service between draft and online.
-
-Tool metadata identifies reads and destructive writes. `MCP_READ_ONLY=true` removes
-write tools and their prompts on every transport, including `create_api_token`, which
-returns a credential. See [ADR 0006](docs/adr/0006-tool-effects-and-read-only-mode.md)
-for the version rules and enforcement boundary.
-
-The [MCP adapter](src/bunkerweb_mcp/mcp_adapter.py) also exposes read-only resources:
-
-| URI | Contents |
-| --- | --- |
-| `config://global` | Global configuration; an empty upstream result includes guidance to use `get_service` with `full=true`. |
-| `logs://jobs` | Scheduler jobs and execution history, separate from runtime log files. |
-| `bans://active` | Active IP bans. |
-| `instances://status` | Registered instances and their status. |
-| `skill://bunkerweb/<skill>/<path>` | Bundled Agent Skills and reference files as text; see [Agent Skills](#agent-skills). |
-
-The first four resources return JSON. Skill resources register when `MCP_ENABLE_SKILLS=true`.
-
-Tool guidance comes from the bundled [prompt catalog](src/bunkerweb_mcp/data/tool_prompts.json).
-The server exposes matching MCP prompts when catalog text exists. Override the
-catalog with `BUNKERWEB_PROMPT_CATALOG`.
-
-Examples and legacy workflow integrations live in [n8n-workflows](n8n-workflows/).
-
-## Agent Skills
-
-The server bundles 13 BunkerWeb Agent Skills (59 files), available through MCP
-`resources/list` and `resources/read`. Start with `skill://bunkerweb/bunkerweb/SKILL.md`;
-the server's initialization instructions point there too. This entrypoint links
-to the other 12 skills on GitHub and to its bundled `references/` files.
-
-Read bundled files at `skill://bunkerweb/<skill>/<path>`, for example
-`skill://bunkerweb/bunkerweb/references/docker.md`. Files are served verbatim,
-with `text/markdown` for `.md` files. Set `MCP_ENABLE_SKILLS=false` to omit skill
-resources and the skills sentence from the server instructions.
-
-Skills come from [bunkerity/bunkerweb-skills](https://github.com/bunkerity/bunkerweb-skills), pinned by [SKILLS_REF](SKILLS_REF).
-Refresh with [scripts/sync_skills.py](scripts/sync_skills.py) `--ref <sha>`; CI runs the script with `--check` to detect drift.
-
 ## Security
 
-Tools can change configuration, stop instances, delete services, and install plugins.
-Grant access only to clients you trust with the configured BunkerWeb API credentials.
-Set `MCP_READ_ONLY=true` to serve only read tools on every transport. The server has no
-per-client roles.
+> [!WARNING]
+> Tools can change configuration, stop instances, delete services, and install plugins.
+> Grant access only to clients you trust with the configured BunkerWeb API credentials.
+> Set `MCP_READ_ONLY=true` to serve only read tools on every transport. The server has no
+> per-client roles.
 
 The HTTP application implements these shared-secret checks:
 
@@ -277,6 +321,8 @@ Keep HTTP on a trusted network or behind an authenticated reverse proxy. Use TLS
 for remote connections, restrict the exposed endpoints, and configure
 `MCP_ALLOWED_HOSTS` and `MCP_ALLOWED_ORIGINS` for your clients. DNS rebinding
 protection does not replace authentication. See [docs/security.md](docs/security.md).
+
+### Secret redaction
 
 Set `BUNKERWEB_REDACT_SECRETS=true` to mask the values of sensitive settings (matched by
 name) in tool and resource outputs before they reach the client. Upstream API error

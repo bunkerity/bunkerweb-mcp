@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 400" width="1000" height="400" role="img" aria-label="Architecture: an MCP client talks to the BunkerWeb MCP server over streamable HTTP or stdio. The server calls the BunkerWeb API over REST. It also reads local logs and calls an optional search service.">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#6ac1e0"/>
+    </marker>
+  </defs>
+  <g font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif">
+    <!-- column headings -->
+    <g font-size="13" font-weight="600" letter-spacing="1.2" fill="#9fb3c0">
+      <text x="110" y="34" text-anchor="middle">MCP CLIENT</text>
+      <text x="500" y="34" text-anchor="middle">THIS REPOSITORY</text>
+      <text x="890" y="34" text-anchor="middle">BUNKERWEB</text>
+    </g>
+
+    <!-- client -->
+    <rect x="20" y="70" width="180" height="170" rx="12" fill="#10202b" stroke="#6ac1e0" stroke-width="2"/>
+    <text x="110" y="108" text-anchor="middle" font-size="18" font-weight="700" fill="#e6edf3">MCP client</text>
+    <text x="110" y="140" text-anchor="middle" font-size="14" fill="#9fb3c0">Claude Code</text>
+    <text x="110" y="162" text-anchor="middle" font-size="14" fill="#9fb3c0">Claude Desktop</text>
+    <text x="110" y="184" text-anchor="middle" font-size="14" fill="#9fb3c0">any MCP client</text>
+    <text x="110" y="216" text-anchor="middle" font-size="13" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" fill="#9fb3c0">.mcp.json</text>
+
+    <!-- server -->
+    <rect x="320" y="52" width="360" height="206" rx="14" fill="#0b5577"/>
+    <rect x="320" y="52" width="360" height="8" rx="4" fill="#2eac68"/>
+    <text x="500" y="92" text-anchor="middle" font-size="20" font-weight="700" fill="#ffffff">BunkerWeb MCP Server</text>
+    <text x="500" y="116" text-anchor="middle" font-size="13" fill="#cfe9f4">FastAPI app, or bunkerweb-mcp over stdio</text>
+    <g font-size="13" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" fill="#ffffff">
+      <rect x="344" y="134" width="150" height="30" rx="6" fill="#ffffff" fill-opacity="0.14"/>
+      <text x="419" y="154" text-anchor="middle">36 API tools</text>
+      <rect x="506" y="134" width="150" height="30" rx="6" fill="#ffffff" fill-opacity="0.14"/>
+      <text x="581" y="154" text-anchor="middle">4 JSON resources</text>
+      <rect x="344" y="172" width="150" height="30" rx="6" fill="#ffffff" fill-opacity="0.14"/>
+      <text x="419" y="192" text-anchor="middle">prompts</text>
+      <rect x="506" y="172" width="150" height="30" rx="6" fill="#ffffff" fill-opacity="0.14"/>
+      <text x="581" y="192" text-anchor="middle">13 Agent Skills</text>
+    </g>
+    <text x="500" y="232" text-anchor="middle" font-size="13" fill="#cfe9f4">selected reads cached in memory (CACHE_ENABLED)</text>
+
+    <!-- API -->
+    <rect x="800" y="70" width="180" height="170" rx="12" fill="#10202b" stroke="#6ac1e0" stroke-width="2"/>
+    <text x="890" y="108" text-anchor="middle" font-size="18" font-weight="700" fill="#e6edf3">BunkerWeb API</text>
+    <text x="890" y="140" text-anchor="middle" font-size="14" fill="#9fb3c0">services, instances,</text>
+    <text x="890" y="162" text-anchor="middle" font-size="14" fill="#9fb3c0">bans, configs, plugins,</text>
+    <text x="890" y="184" text-anchor="middle" font-size="14" fill="#9fb3c0">scheduler jobs</text>
+    <text x="890" y="216" text-anchor="middle" font-size="13" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" fill="#9fb3c0">BUNKERWEB_BASE_URL</text>
+
+    <!-- main arrows -->
+    <g stroke="#6ac1e0" stroke-width="2.5" fill="none">
+      <line x1="204" y1="140" x2="316" y2="140" marker-end="url(#ah)"/>
+      <line x1="684" y1="140" x2="796" y2="140" marker-end="url(#ah)"/>
+    </g>
+    <text x="260" y="124" text-anchor="middle" font-size="13" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" fill="#e6edf3">/mcp/</text>
+    <text x="260" y="168" text-anchor="middle" font-size="13" fill="#9fb3c0">streamable HTTP</text>
+    <text x="260" y="186" text-anchor="middle" font-size="13" fill="#9fb3c0">or stdio</text>
+    <text x="740" y="124" text-anchor="middle" font-size="13" fill="#e6edf3">REST</text>
+    <text x="740" y="168" text-anchor="middle" font-size="13" fill="#9fb3c0">bearer token</text>
+    <text x="740" y="186" text-anchor="middle" font-size="13" fill="#9fb3c0">or Basic auth</text>
+
+    <!-- legacy endpoints -->
+    <g stroke="#7f93a1" stroke-width="1.5" stroke-dasharray="5 4" fill="none">
+      <path d="M204 210 L260 210 L260 232 L316 232" marker-end="url(#ah)"/>
+    </g>
+    <text x="206" y="258" font-size="13" fill="#9fb3c0">legacy: /rpc, /ws</text>
+
+    <!-- side services -->
+    <g stroke="#7f93a1" stroke-width="1.5" stroke-dasharray="5 4" fill="none">
+      <line x1="410" y1="262" x2="410" y2="304"/>
+      <line x1="590" y1="262" x2="590" y2="304"/>
+    </g>
+    <rect x="290" y="304" width="240" height="64" rx="10" fill="#10202b" stroke="#7f93a1" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text x="410" y="332" text-anchor="middle" font-size="15" font-weight="600" fill="#e6edf3">Local log files</text>
+    <text x="410" y="352" text-anchor="middle" font-size="13" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" fill="#9fb3c0">BUNKERWEB_LOGS_PATH</text>
+    <rect x="550" y="304" width="240" height="64" rx="10" fill="#10202b" stroke="#7f93a1" stroke-width="1.5" stroke-dasharray="5 4"/>
+    <text x="670" y="332" text-anchor="middle" font-size="15" font-weight="600" fill="#e6edf3">Search service</text>
+    <text x="670" y="352" text-anchor="middle" font-size="13" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" fill="#9fb3c0">SEARCH_API_URL</text>
+    <text x="20" y="392" font-size="13" fill="#9fb3c0">Solid: always present. Dashed: optional or legacy.</text>
+  </g>
+</svg>
