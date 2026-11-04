@@ -1,0 +1,26 @@
+docs/assets/architecture-light.svg
+  s_70b3d4b56874b0::t_e20165c2f845e7 1-79
+README.md
+  s_70b3d4b56874b0::t_e20165c2f845e7 13-16,37-64,93-99,120,184-185,191-205,217-218,231-232,254-298,301-305,325
+  s_70b3d4b56874b0::t_3c5c6ae036db38 326
+docs/assets/architecture-dark.svg
+  s_70b3d4b56874b0::t_e20165c2f845e7 1-79
+docs/assets/stats.svg
+  s_70b3d4b56874b0::t_e20165c2f845e7 1-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0a1a48d1aa2380493ad111e6bb28dc8f35f3533f",
+  "prompts": {},
+  "sessions": {
+    "s_70b3d4b56874b0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0fabed66-d46c-44f7-b129-934e7740b2be",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "TheophileDiot <tdiot@bunkerity.com>"
+    }
+  }
+}
